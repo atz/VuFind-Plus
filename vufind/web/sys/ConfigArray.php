@@ -161,8 +161,38 @@ function readConfig()
 	//Don't try to preserve SSL since the combination of proxy and SSL does not work nicely.
 	//i.e. https://mesa.marmot.org is proxied to https://mesa.opac.marmot.org which does not have
 	//a valid SSL cert
-	$mainArray['Site']['url'] = "http://" . $serverUrl;
+	//if (isset($_SERVER['HTTPS'])){
+	//	$mainArray['Site']['url'] = "https://" . $serverUrl;
+	//}else{
+		$mainArray['Site']['url'] = "http://" . $serverUrl;
+	//}
 
+	if (isset($mainArray['Extra_Config']) && isset($mainArray['Extra_Config']['local_overrides'])) {
+		if (file_exists("../../sites/$servername/conf/" . $mainArray['Extra_Config']['local_overrides'])){
+			$file = trim("../../sites/$servername/conf/" . $mainArray['Extra_Config']['local_overrides']);
+			$localOverride = @parse_ini_file($file, true);
+		}else {
+			$file = trim('../../sites/default/conf/' . $mainArray['Extra_Config']['local_overrides']);
+			$localOverride = @parse_ini_file($file, true);
+		}
+	}
+	$timer->logTime('finished update config for scoping');
+
+	$configArray = updateConfigForActiveLocation($configArray);
+	return $configArray;
+}
+
+function updateConfigForActiveLocation($configArray){
+	global $locationSingleton;
+	$location = $locationSingleton->getActiveLocation();
+	if ($location != null){
+		if (strlen($location->facetFile) > 0 && $location->facetFile != 'default'){
+			$file = trim('../../conf/facets/' . $location->facetFile . '.ini');
+			if (file_exists($file)) {
+				$configArray['Extra_Config']['facets'] = 'facets/' . $location->facetFile . '.ini';
+			}
+		}
+	}
 	return $mainArray;
 }
 

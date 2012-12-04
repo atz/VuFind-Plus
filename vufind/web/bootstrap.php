@@ -115,7 +115,11 @@ function handlePEARError($error, $method = null){
 
 	$interface->assign('error', $error);
 	$interface->assign('debug', $configArray['System']['debug']);
-	$interface->display('error.tpl');
+	if ($configArray['System']['debug']){
+		print_r($error);
+	}else{
+		$interface->display('error.tpl');
+	}
 
 	// Exceptions we don't want to log
 	$doLog = true;
