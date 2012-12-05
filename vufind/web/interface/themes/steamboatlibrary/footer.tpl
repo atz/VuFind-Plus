@@ -1,12 +1,12 @@
 {* Your footer *}
 <div class="footerCol"><p><strong>{translate text='Featured Items'}</strong></p>
 	<ul>
-		<li><a href='http://www.steamboatlibrary.org/books-and-media/books/staff-picks'>Staff Picks</a></li>
-		<li><a href='{$path}/Search/Results?lookfor=&amp;type=Keyword&amp;type=Keyword&amp;filter[]=local_time_since_added_steamboatlibrary%3A%22Week%22&amp;filter[]=building%3A%22SSCL+Bud+Werner+Library%22&amp;filter[]=itype%3A%22Young+adult+fiction%22&amp;sort=relevance&amp;view=list&amp;searchSource=local'>{translate text='New Teen Reads'}</a></li>
-		<li><a href='{$path}/Search/Results?lookfor=&amp;type=Keyword&amp;type=Keyword&amp;filter[]=local_time_since_added_steamboatlibrary%3A%22Week%22&amp;filter[]=building%3A%22SSCL+Bud+Werner+Library%22&amp;filter[]=itype%3A%22Easy+book%22&amp;sort=relevance&amp;view=list&amp;searchSource=local'>{translate text='New Books for Young Children'}</a></li>
-		<li><a href='{$path}/Search/Results?lookfor=&amp;type=Keyword&amp;type=Keyword&amp;filter[]=local_time_since_added_steamboatlibrary%3A%22Week%22&amp;filter[]=building%3A%22SSCL+Bud+Werner+Library%22&amp;filter[]=itype%3A%22Juvenile+fiction%22&amp;sort=relevance&amp;view=list&amp;searchSource=local'>{translate text='New Books for Older Children'}</a></li>
-		<li><a href='{$path}/Search/Results?lookfor=&amp;type=Keyword&amp;type=Keyword&amp;filter[]=local_time_since_added_steamboatlibrary%3A%22Month%22&amp;filter[]=building%3A%22SSCL+Bud+Werner+Library%22&amp;filter[]=itype%3A%22Music%22&amp;sort=relevance&amp;view=list&amp;searchSource=local'>{translate text='New Music'}</a></li>
-		<li><a href='http://library.booksite.com/7359/nl/?list=CNL1'>{translate text='New Television'}</a></li>
+		<li><a href='{$path}/Search/Results?lookfor=&amp;type=Keyword&amp;filter[]=local_time_since_added_steamboatlibrary%3A%22Month%22&amp;filter[]=literary_form_full%3A%22Fiction%22&amp;filter[]=institution%3A%22Steamboat+Springs+Community+Libraries%22&amp;filter[]=format_category%3A%22Books%22'>{translate text='New Fiction'}</a></li>
+		<li><a href='{$path}/Search/Results?lookfor=&amp;type=Keyword&amp;filter[]=local_time_since_added_steamboatlibrary%3A%22Month%22&amp;filter[]=literary_form_full%3A%22Non+Fiction%22&amp;filter[]=institution%3A%22Steamboat+Springs+Community+Libraries%22&amp;filter[]=format_category%3A%22Books%22 '>{translate text='New Non-Fiction'}</a></li>
+		<li><a href='{$path}/Search/Results?lookfor=&amp;type=Keyword&amp;filter[]=local_time_since_added_steamboatlibrary%3A%22Month%22&amp;filter[]=format%3A%22DVD%22&amp;filter[]=institution%3A%22Steamboat+Springs+Community+Libraries%22'>{translate text='New DVDs'}</a></li>
+		<li><a href='{$path}/Search/Results?lookfor=&amp;type=Keyword&amp;filter[]=institution%3A%22Steamboat+Springs+Community+Libraries%22&amp;filter[]=format%3A%22Blu-ray%22&amp;filter[]=local_time_since_added_steamboatlibrary%3A%22Month%22'>{translate text='New Bluray'}</a></li>
+		<li><a href='{$path}/Search/Results?lookfor=&amp;type=Keyword&amp;filter[]=institution%3A%22Steamboat+Springs+Community+Libraries%22&amp;filter[]=format_category%3A%22Audio%22&amp;filter[]=local_time_since_added_steamboatlibrary%3A%22Month%22 '>{translate text='New Audio Books &amp; Music'}</a></li>
+		<li><a href='{$path}/Search/Results?lookfor=&amp;amp;type=Keyword&amp;filter[]=local_time_since_added_steamboatlibrary%3A"Week"'>{translate text='New This Week'}</a></li>
 	</ul>
 </div>
 <div class="footerCol"><p><strong>{translate text='About Us'}</strong></p>
@@ -35,16 +35,6 @@
 		<li><a href="http://www.steamboatlibrary.org/support-us/thanks-to">{translate text='Thanks To'}</a></li>
 	</ul>
 </div>
-<div class="footerCol"><p><strong>{translate text='Contact Us'}</strong></p>
-	<ul>
-		<li><a href="http://www.steamboatlibrary.org/questions-comments-suggestions/questions-comments-suggestions">{translate text='Questions, Comments, Suggestions'}</a></li>
-		<li><a href="http://www.steamboatlibrary.org/questions-comments-suggestions/ask-a-librarian">{translate text='Ask a Librarian'}</a></li>
-		<li><a href="http://www.steamboatlibrary.org/how-do-i/manage-my-account/request-a-title">{translate text='Request a Title'}</a></li>
-		<li><a href="http://www.steamboatlibrary.org/how-do-i/manage-my-account/request-a-title/suggest-a-purchase">{translate text='Suggest a Purchase'}</a></li>
-		<li><a href="http://www.steamboatlibrary.org/questions-comments-suggestions/staff-directory">{translate text='Staff Directory'}</a></li>
-	</ul>
-</div>
-
 <br class="clearer"/>
 {if !$productionServer}
 <div class='location_info'>{$physicalLocation}</div>
