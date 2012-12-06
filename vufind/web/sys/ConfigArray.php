@@ -161,38 +161,8 @@ function readConfig()
 	//Don't try to preserve SSL since the combination of proxy and SSL does not work nicely.
 	//i.e. https://mesa.marmot.org is proxied to https://mesa.opac.marmot.org which does not have
 	//a valid SSL cert
-	//if (isset($_SERVER['HTTPS'])){
-	//	$mainArray['Site']['url'] = "https://" . $serverUrl;
-	//}else{
-		$mainArray['Site']['url'] = "http://" . $serverUrl;
-	//}
+	$mainArray['Site']['url'] = "http://" . $serverUrl;
 
-	if (isset($mainArray['Extra_Config']) && isset($mainArray['Extra_Config']['local_overrides'])) {
-		if (file_exists("../../sites/$servername/conf/" . $mainArray['Extra_Config']['local_overrides'])){
-			$file = trim("../../sites/$servername/conf/" . $mainArray['Extra_Config']['local_overrides']);
-			$localOverride = @parse_ini_file($file, true);
-		}else {
-			$file = trim('../../sites/default/conf/' . $mainArray['Extra_Config']['local_overrides']);
-			$localOverride = @parse_ini_file($file, true);
-		}
-
-
-		$location = $locationSingleton->getActiveLocation();
-
-		//Add an extra css file for the location if it exists.
-		$themes = explode(',', $library->themeName);
-		foreach ($themes as $themeName){
-			if ($location != null && file_exists('./interface/themes/' . $themeName . '/css/'. $location->code .'_extra_styles.css')) {
-				$configArray['Site']['theme_css'] = $configArray['Site']['path'] . '/interface/themes/' . $themeName . '/css/'. $location->code .'_extra_styles.css';
-			}
-			if ($location != null && file_exists('./interface/themes/' . $themeName . '/images/'. $location->code .'_logo_small.png')) {
-				$configArray['Site']['smallLogo'] = '/interface/themes/' . $themeName . '/images/'. $location->code .'_logo_small.png';
-			}
-			if ($location != null && file_exists('./interface/themes/' . $themeName . '/images/'. $location->code .'_logo_large.png')) {
-				$configArray['Site']['largeLogo'] = '/interface/themes/' . $themeName . '/images/'. $location->code .'_logo_large.png';
-			}
-		}
-	}
 	return $mainArray;
 }
 
