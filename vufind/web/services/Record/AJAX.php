@@ -454,8 +454,10 @@ class AJAX extends Action {
 					}
 				}else{
 					$formattedTitle = "<div id=\"scrollerTitleSeries{$key}\" class=\"scrollerTitle\">" .
+						'<a href="' . $configArray['Site']['path'] . "/Record/" . $rawData['id'] . '" id="descriptionTrigger' . $rawData['id'] . '">' .
 						"<img src=\"{$rawData['image']}\" class=\"scrollerTitleCover\" alt=\"{$rawData['title']} Cover\"/>" .
-						"</div>";
+						"</a></div>" .
+						"<div id='descriptionPlaceholder{$rawData['id']}' style='display:none'></div>";
 				}
 				$rawData['formattedTitle'] = $formattedTitle;
 				$titles[$key] = $rawData;
