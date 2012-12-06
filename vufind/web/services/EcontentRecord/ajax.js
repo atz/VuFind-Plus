@@ -1,5 +1,5 @@
 function saveEContentRecord(id, formElem, strings) {
-	successCallback = function() {
+	var successCallback = function() {
 		// Highlight the save link to indicate that the content is saved:
 		$('#saveLink').addClass('savedFavorite');
 	};
@@ -139,8 +139,7 @@ function GetEContentHoldingsInfo(id, type, callback) {
 			$("#statusValue").html(status);
 			$("#statusValue").addClass($(data).find("class").text());
 			
-			if (typeof callback === 'function')
-			{
+			if (typeof callback === 'function') {
 				callback();
 			}
 			
