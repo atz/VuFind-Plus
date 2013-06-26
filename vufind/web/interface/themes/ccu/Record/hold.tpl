@@ -1,16 +1,22 @@
 <div id="page-content" class="content">
 	<div id="main-content">
-		<form name='placeHoldForm' action="{$path}/Record/{$id|escape:"url"}/Hold" method="post">
+		<form name='placeHoldForm' id='placeHoldForm' action="{$path}/Record/{$id|escape:"url"}/Hold" method="post">
 			<div>
+				<div class="holdsSummary">
+					<h3>Placing hold on <span id='newHoldCount'>1</span> title.</h3>
+					<input type="hidden" name="holdCount" id="holdCount" value="1"/>
+					<div class="pageWarning" id="overHoldCountWarning" {if !$showOverHoldLimit}style="display:none"{/if}>Warning: You have reached the maximum of <span class='maxHolds'>{$maxHolds}</span> holds for your account.  You must cancel a hold before you can place a hold on this title.</div>
+					<div id='holdError' style='display: none'></div>
+				</div>
 				{if $holdDisclaimer}
 					<div id="holdDisclaimer">{$holdDisclaimer}</div>
 				{/if}
 				{if (!isset($profile)) }
 					<label for="username">{translate text='Your Name'}:</label>
-					<input type="text" name="username" id="username" size="40"><br/>
+					<input type="text" name="username" id="username" size="40" /><br/>
 
 					<label for="username">{translate text='CCU ID Number'}:</label>
-					<input type="password" name="password" id="password" size="40"><br/>
+					<input type="password" name="password" id="password" size="40" /><br/>
 					<input id="loginButton" type="button" onclick="return GetPreferredBranches('{$id|escape}');" value="Login"/>
 				{/if}
 				<div id='holdOptions' {if (!isset($profile)) }style='display:none'{/if}>

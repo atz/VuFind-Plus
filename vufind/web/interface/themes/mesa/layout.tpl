@@ -11,7 +11,8 @@
 		<script type="text/javascript">
 			path = '{$path}';
 			url = '{$url}';
-			loggedIn = {if $user}true{else}false{/if}
+			loggedIn = {if $user}true{else}false{/if};
+				automaticTimeoutLength = {if $automaticTimeoutLength}{$automaticTimeoutLength}{else}90{/if};
 		</script>
 
 		{js filename="consolidated.min.js"}
@@ -66,7 +67,7 @@
 		{if $showBreadcrumbs}
 		<div class="breadcrumbs">
 			<div class="breadcrumbinner">
-				<a href="{$homeBreadcrumbLink}">{translate text="Home"}</a> <span>&gt;</span>
+				<a href="{$homeBreadcrumbLink}">{translate text=$homeLinkText}</a> <span>&gt;</span>
 				{include file="$module/breadcrumbs.tpl"}
 			</div>
 		</div>
@@ -106,6 +107,7 @@
 
 		</div> {* End doc *}
 		{* include file ='mesafooter.tpl' *}
+		{include file=tracking.tpl}
 	</body>
 </html>
 {/strip}

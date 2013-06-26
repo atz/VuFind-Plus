@@ -24,7 +24,7 @@
 		<ul class="filters">
 		{foreach from=$filterList item=filters key=field }
 			{foreach from=$filters item=filter}
-				<li>{translate text=$field}: {$filter.display|escape} <a href="{$filter.removalUrl|escape}"><img src="{$path}/images/silk/delete.png" alt="Delete"/></a></li>
+				<li>{translate text=$field}: {$filter.display|translate|escape} <a href="{$filter.removalUrl|escape}" onclick="trackEvent('Remove Facet', '{$field}', '{$filter.display|escape}');"><img src="{$path}/images/silk/delete.png" alt="Delete"/></a></li>
 			{/foreach}
 		{/foreach}
 		</ul>
@@ -58,9 +58,9 @@
 							<br/>
 							{if $title == 'publishDate'}
 								<div id='yearDefaultLinks'>
-								<a onclick="$('#{$title}yearfrom').val('2005');$('#{$title}yearto').val('');" href='javascript:void(0);'>since&nbsp;2005</a>
+								<a onclick="$('#{$title}yearfrom').val('2010');$('#{$title}yearto').val('');" href='javascript:void(0);'>since&nbsp;2010</a>
+								&bull;<a onclick="$('#{$title}yearfrom').val('2005');$('#{$title}yearto').val('');" href='javascript:void(0);'>since&nbsp;2005</a>
 								&bull;<a onclick="$('#{$title}yearfrom').val('2000');$('#{$title}yearto').val('');" href='javascript:void(0);'>since&nbsp;2000</a>
-								&bull;<a onclick="$('#{$title}yearfrom').val('1995');$('#{$title}yearto').val('');" href='javascript:void(0);'>since&nbsp;1995</a>
 								</div>
 							{/if}
 							</div>
@@ -74,15 +74,15 @@
 						{assign var=thisFacet value=$cluster.list.$curLabel}
 						{if $thisFacet.isApplied}
 							{if $curLabel == 'Unrated'}
-								<dd>{$thisFacet.value|escape} <img src="{$path}/images/silk/tick.png" alt="Selected" /> <a href="{$thisFacet.removalUrl|escape}" class="removeFacetLink">(remove)</a></dd>
+								<dd>{$thisFacet.value|escape} <img src="{$path}/images/silk/tick.png" alt="Selected" onclick="trackEvent('Remove Facet', '{$cluster.label}', '{$curLabel|translate}');"/> <a href="{$thisFacet.removalUrl|escape}" class="removeFacetLink">(remove)</a></dd>
 							{else}
-								<dd><img src="{$path}/images/{$curLabel}.png" alt="{$curLabel|translate}"/> <img src="{$path}/images/silk/tick.png" alt="Selected" /> <a href="{$thisFacet.removalUrl|escape}" class="removeFacetLink">(remove)</a></dd>
+								<dd><img src="{$path}/images/{$curLabel}.png" alt="{$curLabel|translate} &amp; Up" title="{$curLabel|translate} &amp; up" onclick="trackEvent('Remove Facet', '{$curLabel|translate}', '{$curLabel|translate}');"/> <img src="{$path}/images/silk/tick.png" alt="Selected" /> <a href="{$thisFacet.removalUrl|escape}" class="removeFacetLink">(remove)</a></dd>
 							{/if}
 						{else}
 							{if $curLabel == 'Unrated'}
 								<dd>{if $thisFacet.url !=null}<a href="{$thisFacet.url|escape}">{/if}{$thisFacet.display|escape}{if $thisFacet.url !=null}</a>{/if} ({$thisFacet.count})</dd>
 							{else}
-								<dd>{if $thisFacet.url !=null}<a href="{$thisFacet.url|escape}">{/if}<img src="{$path}/images/{$curLabel}.png" alt="{$curLabel|translate}"/>{if $thisFacet.url !=null}</a>{/if} ({if $thisFacet.count}{$thisFacet.count}{else}0{/if})</dd>
+								<dd>{if $thisFacet.url !=null}<a href="{$thisFacet.url|escape}">{/if}<img src="{$path}/images/{$curLabel}.png" alt="{$curLabel|translate} &amp; Up" title="{$curLabel|translate} &amp; Up"/>{if $thisFacet.url !=null}</a>{/if} ({if $thisFacet.count}{$thisFacet.count}{else}0{/if})</dd>
 							{/if}
 						{/if}
 					{/foreach}
@@ -115,7 +115,7 @@
 								{/foreach}
 								<input type="submit" value="Go" id="goButton" />
 								{if $title == 'lexile_score'}
-								<script>{literal}
+								<script type="text/javascript">{literal}
 									$(function() {
 										$( "#lexile-range" ).slider({
 											range: true,
@@ -141,6 +141,18 @@
 						</form>
 					</dd>
 				</dl>
+			{elseif $cluster.showAsDropDown}
+				<dl class="narrowList navmenu narrowbegin">
+					<dt>{translate text=$cluster.label}</dt>
+					<dd>
+						<select class="facetDropDown" onchange="changeDropDownFacet('facetDropDown-{$title}', '{$cluster.label}')" id="facetDropDown-{$title}">
+							<option selected="selected">Choose {$cluster.label}</option>
+							{foreach from=$cluster.list item=thisFacet name="narrowLoop"}
+								<option data-destination="{$thisFacet.url}" data-label="{$thisFacet.display|escape}">{$thisFacet.display|escape}{if $thisFacet.count != ''}&nbsp;({$thisFacet.count}){/if}</option>
+							{/foreach}
+						</select>
+					</dd>
+				</dl>
 			{else}
 				<dl class="narrowList navmenu narrowbegin">
 					<dt>{translate text=$cluster.label}</dt>
@@ -151,7 +163,7 @@
 					<dl class="narrowList navmenu narrowGroupHidden" id="narrowGroupHidden_{$title}">
 						{/if}
 						{if $thisFacet.isApplied}
-							<dd>{$thisFacet.display|escape} <img src="{$path}/images/silk/tick.png" alt="Selected" /> <a href="{$thisFacet.removalUrl|escape}" class="removeFacetLink">(remove)</a></dd>
+							<dd>{$thisFacet.display|escape} <img src="{$path}/images/silk/tick.png" alt="Selected" /> <a href="{$thisFacet.removalUrl|escape}" class="removeFacetLink" onclick="trackEvent('Remove Facet', '{$cluster.label}', '{$thisFacet.display|escape}');">(remove)</a></dd>
 						{else}
 							<dd>{if $thisFacet.url !=null}<a href="{$thisFacet.url|escape}">{/if}{$thisFacet.display|escape}{if $thisFacet.url !=null}</a>{/if}{if $thisFacet.count != ''}&nbsp;({$thisFacet.count}){/if}</dd>
 						{/if}

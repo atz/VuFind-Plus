@@ -76,4 +76,14 @@ class Libraries extends ObjectEditor
 		global $user;
 		return $user->hasRole('opacAdmin');
 	}
+	function getAdditionalObjectActions($existingObject){
+		$objectActions = array();
+		if ($existingObject != null){
+			$objectActions[] = array(
+				'text' => 'Edit Facets',
+				'url' => '/Admin/LibraryFacetSettings?libraryId=' . $existingObject->libraryId,
+			);
+		}
+		return $objectActions;
+	}
 }

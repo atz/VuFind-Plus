@@ -6,6 +6,7 @@ require_once 'DB/DataObject.php';
 require_once 'DB/DataObject/Cast.php';
 require_once 'Drivers/marmot_inc/Holiday.php';
 require_once 'Drivers/marmot_inc/NearbyBookStore.php';
+require_once 'Drivers/marmot_inc/LibraryFacetSetting.php';
 
 class Library extends DB_DataObject
 {
@@ -61,6 +62,7 @@ class Library extends DB_DataObject
 	public $systemsToRepeatIn;
 	public $showMarmotResultsAtEndOfSearch;
 	public $homeLink;
+	public $homeLinkText;
 	public $useHomeLinkInBreadcrumbs;
 	public $showAdvancedSearchbox;
 	public $enableBookCart;
@@ -92,6 +94,9 @@ class Library extends DB_DataObject
 	public $showCheckInGrid;
 	public $boostByLibrary;
 	public $recordsToBlackList;
+	public $showOtherFormatCategory;
+	public $showWikipediaContent;
+	public $automaticTimeoutLength;
 
 	/* Static get */
 	function staticGet($k,$v=NULL) { return DB_DataObject::staticGet('Library',$k,$v); }
@@ -112,6 +117,13 @@ class Library extends DB_DataObject
 		unset($nearbyBookStoreStructure['weight']);
 		unset($nearbyBookStoreStructure['libraryId']);
 
+		$facetSettingStructure = LibraryFacetSetting::getObjectStructure();
+		unset($facetSettingStructure['weight']);
+		unset($facetSettingStructure['libraryId']);
+		unset($facetSettingStructure['numEntriesToShowByDefault']);
+		unset($facetSettingStructure['showAsDropDown']);
+		unset($facetSettingStructure['sortMode']);
+
 		$structure = array(
 			'libraryId' => array('property'=>'libraryId', 'type'=>'label', 'label'=>'Library Id', 'description'=>'The unique id of the libary within the database'),
 			'subdomain' => array('property'=>'subdomain', 'type'=>'text', 'label'=>'Subdomain', 'description'=>'A unique id to identify the library within the system'),
@@ -121,6 +133,7 @@ class Library extends DB_DataObject
 				'themeName' => array('property'=>'themeName', 'type'=>'text', 'label'=>'Theme Name', 'description'=>'The name of the theme which should be used for the library', 'hideInLists' => true,),
 				'homeLink' => array('property'=>'homeLink', 'type'=>'text', 'label'=>'Home Link', 'description'=>'The location to send the user when they click on the home button or logo.  Use default or blank to go back to the vufind home location.', 'size'=>'40', 'hideInLists' => true,),
 				'useHomeLinkInBreadcrumbs' => array('property'=>'useHomeLinkInBreadcrumbs', 'type'=>'checkbox', 'label'=>'Use Home Link in Breadcrumbs', 'description'=>'Whether or not the home link should be used in the breadcumbs.', 'hideInLists' => true,),
+				'homeLinkText' => array('property'=>'homeLinkText', 'type'=>'text', 'label'=>'Home Link Text', 'description'=>'The text to show for the Home breadcrumb link', 'size'=>'40', 'hideInLists' => true, 'default' => 'Home'),
 				'homePageWidgetId' => array('property'=>'homePageWidgetId', 'type'=>'integer', 'label'=>'Home Page Widget Id', 'description'=>'An id for the list widget to display on the home page', 'hideInLists' => true,),
 				'illLink'  => array('property'=>'illLink', 'type'=>'url', 'label'=>'ILL Link', 'description'=>'A link to a library system specific ILL page', 'size'=>'80', 'hideInLists' => true,),
 				'askALibrarianLink'  => array('property'=>'askALibrarianLink', 'type'=>'url', 'label'=>'Ask a Librarian Link', 'description'=>'A link to a library system specific Ask a Librarian page', 'size'=>'80', 'hideInLists' => true,),
@@ -163,6 +176,7 @@ class Library extends DB_DataObject
 				'showAdvancedSearchbox'  => array('property'=>'showAdvancedSearchbox', 'type'=>'checkbox', 'label'=>'Show Advanced Search Link', 'description'=>'Whether or not users should see the advanced search link next to the search box.  It will still appear in the footer.', 'hideInLists' => true,),
 				'applyNumberOfHoldingsBoost' => array('property'=>'applyNumberOfHoldingsBoost', 'type'=>'checkbox', 'label'=>'Apply Number Of Holdings Boost', 'description'=>'Whether or not the relevance will use boosting by number of holdings in the catalog.', 'hideInLists' => true,),
 				'repeatInAmazon'  => array('property'=>'repeatInAmazon', 'type'=>'checkbox', 'label'=>'Repeat In Amazon', 'description'=>'Turn on to allow repeat search in Amazon functionality.', 'hideInLists' => true),
+				'showOtherFormatCategory' => array('property'=>'showOtherFormatCategory', 'type'=>'checkbox', 'label'=>'Show Other Format Category', 'description'=>'Whether or not the Other Format Category Icon should be shown while searching.', 'default'=>'1', 'hideInLists' => true,),
 				'recordsToBlackList' => array('property'=>'recordsToBlackList', 'type'=>'textarea', 'label'=>'Records to deaccession', 'description'=>'A list of records to deaccession (hide) in search results.  Enter one record per line.', 'hideInLists' => true,),
 			)),
 			array('property'=>'enrichmentSection', 'type' => 'section', 'label' =>'Catalog Enrichment', 'hideInLists' => true, 'properties' => array(
@@ -176,6 +190,7 @@ class Library extends DB_DataObject
 				'showRatings'  => array('property'=>'showRatings', 'type'=>'checkbox', 'label'=>'Show Ratings', 'description'=>'Whether or not ratings are shown', 'hideInLists' => true,),
 				'showFavorites'  => array('property'=>'showFavorites', 'type'=>'checkbox', 'label'=>'Show Favorites', 'description'=>'Whether or not users can maintain favorites lists', 'hideInLists' => true,),
 				'showOtherEditionsPopup' => array('property'=>'showOtherEditionsPopup', 'type'=>'checkbox', 'label'=>'Show Other Editions Popup', 'description'=>'Whether or not the Other Formats and Langauges popup will be shown (if not shows Other Editions sidebar)', 'default'=>'1', 'hideInLists' => true,),
+				'showWikipediaContent' => array('property'=>'showWikipediaContent', 'type'=>'checkbox', 'label'=>'Show Wikipedia Content', 'description'=>'Whether or not Wikipedia content should be shown on author page', 'default'=>'1', 'hideInLists' => true,),
 			)),
 			array('property'=>'fullRecordSection', 'type' => 'section', 'label' =>'Full Record Display', 'hideInLists' => true, 'properties' => array(
 				'tabbedDetails'  => array('property'=>'tabbedDetails', 'type'=>'checkbox', 'label'=>'Tabbed Details', 'description'=>'Whether or not details (reviews, copies, citations, etc) should be shown in tabs', 'hideInLists' => true,),
@@ -234,7 +249,7 @@ class Library extends DB_DataObject
 			'nearbyBookStores' => array(
 				'property'=>'nearbyBookStores',
 				'type'=>'oneToMany',
-				'label'=>'NearbyBookStores',
+				'label'=>'Nearby Book Stores',
 				'description'=>'A list of book stores to search',
 				'keyThis' => 'libraryId',
 				'keyOther' => 'libraryId',
@@ -243,6 +258,21 @@ class Library extends DB_DataObject
 				'hideInLists' => true,
 				'sortable' => true,
 				'storeDb' => true
+			),
+			'facets' => array(
+				'property'=>'facets',
+				'type'=>'oneToMany',
+				'label'=>'Facets',
+				'description'=>'A list of facets to display in search results',
+				'keyThis' => 'libraryId',
+				'keyOther' => 'libraryId',
+				'subObjectType' => 'LibraryFacetSetting',
+				'structure' => $facetSettingStructure,
+				'hideInLists' => true,
+				'sortable' => true,
+				'storeDb' => true,
+				'allowEdit' => true,
+				'canEdit' => true,
 			),
 		);
 		foreach ($structure as $fieldName => $field){
@@ -363,6 +393,18 @@ class Library extends DB_DataObject
 				}
 			}
 			return $this->nearbyBookStores;
+		}elseif ($name == "facets") {
+			if (!isset($this->facets)){
+				$this->facets = array();
+				$facet = new LibraryFacetSetting();
+				$facet->libraryId = $this->libraryId;
+				$facet->orderBy('weight');
+				$facet->find();
+				while($facet->fetch()){
+					$this->facets[$facet->id] = clone($facet);
+				}
+			}
+			return $this->facets;
 		}
 	}
 
@@ -371,6 +413,8 @@ class Library extends DB_DataObject
 			$this->holidays = $value;
 		}elseif ($name == "nearbyBookStores") {
 			$this->nearbyBookStores = $value;
+		}elseif ($name == "facets") {
+			$this->facets = $value;
 		}
 	}
 
@@ -386,6 +430,7 @@ class Library extends DB_DataObject
 		}else{
 			$this->saveHolidays();
 			$this->saveNearbyBookStores();
+			$this->saveFacets();
 		}
 	}
 
@@ -401,6 +446,25 @@ class Library extends DB_DataObject
 		}else{
 			$this->saveHolidays();
 			$this->saveNearbyBookStores();
+			$this->saveFacets();
+		}
+	}
+
+	public function saveFacets(){
+		if (isset ($this->facets) && is_array($this->facets)){
+			foreach ($this->facets as $facet){
+				if (isset($facet->deleteOnSave) && $facet->deleteOnSave == true){
+					$facet->delete();
+				}else{
+					if (isset($facet->id) && is_numeric($facet->id)){
+						$ret = $facet->update();
+					}else{
+						$facet->libraryId = $this->libraryId;
+						$facet->insert();
+					}
+				}
+			}
+			unset($this->facets);
 		}
 	}
 

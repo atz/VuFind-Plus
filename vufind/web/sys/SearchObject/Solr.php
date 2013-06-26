@@ -325,10 +325,24 @@ class SearchObject_Solr extends SearchObject_Base
 		// Call the standard initialization routine in the parent:
 		parent::init();
 
+		$searchLibrary = Library::getSearchLibrary();
+		if ($searchLibrary == null || count($searchLibrary->facets) == 0){
+			// Adjust facet options to use advanced settings
+			$this->facetConfig = isset($this->allFacetSettings['Advanced']) ? $this->allFacetSettings['Advanced'] : array();
+		}else{
+			$this->facetConfig=array();
+			foreach ($searchLibrary->facets as $facet){
+				if ($facet->showInAdvancedSearch == 1){
+					if ($facet->facetName == 'time_since_added'){
+						$this->facetConfig['local_time_since_added_' . $searchLibrary->subdomain] = $facet->displayName;
+					}else{
+						$this->facetConfig[$facet->facetName] = $facet->displayName;
+					}
+				}
+			}
+		}
 		//********************
-		// Adjust facet options to use advanced settings
-		$this->facetConfig = isset($this->allFacetSettings['Advanced']) ?
-		$this->allFacetSettings['Advanced'] : array();
+
 		$facetLimit = $this->getFacetSetting('Advanced_Settings', 'facet_limit');
 		if (is_numeric($facetLimit)) {
 			$this->facetLimit = $facetLimit;
@@ -342,9 +356,9 @@ class SearchObject_Solr extends SearchObject_Base
 		$this->searchTerms[] = array(
             'index'   => $this->defaultIndex,
             'lookfor' => ""
-            );
+		);
 
-            return true;
+		return true;
 	}
 
 	/**
@@ -980,6 +994,7 @@ class SearchObject_Solr extends SearchObject_Base
 	 */
 	public function processSearch($returnIndexErrors = false, $recommendations = false) {
 		global $timer;
+		global $analytics;
 
 		// Our search has already been processed in init()
 		$search = $this->searchTerms;
@@ -1030,6 +1045,7 @@ class SearchObject_Solr extends SearchObject_Base
 		}
 		foreach ($this->filterList as $field => $filter) {
 			foreach ($filter as $value) {
+				$analytics->addEvent('Apply Facet', $field, $value);
 				// Special case -- allow trailing wildcards:
 				if (substr($value, -1) == '*') {
 					$filterQuery[] = "$field:$value";

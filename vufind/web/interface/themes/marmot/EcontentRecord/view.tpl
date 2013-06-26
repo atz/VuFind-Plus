@@ -226,7 +226,7 @@ function redrawSaveStatus() {literal}{{/literal}
 		{/if}
 		
 		{if $classicId}
-			<div id = "classicViewLink"><a href ="{$classicUrl}/record={$classicId|escape:"url"}" rel="external" onclick="window.open (this.href, 'child'); return false">Classic View</a></div>
+			<div id = "classicViewLink"><a href ="{$classicUrl}/record={$classicId|escape:"url"}&amp;searchscope={$millenniumScope}" rel="external" onclick="trackEvent('Outgoing Link', 'Classic', '{$classicId}');window.open (this.href, 'child'); return false">Classic View</a></div>
 		{/if}
 		
 		{if $linkToAmazon == 1 && $isbn}
@@ -317,7 +317,7 @@ function redrawSaveStatus() {literal}{{/literal}
 		
 		{if $showOtherEditionsPopup}
 		<div class="otherEditionCopies">
-			<div style="font-weight:bold"><a href="#" onclick="loadOtherEditionSummaries('{$id}', true)">{translate text="Other Formats and Languages"}</a></div>
+			<div style="font-weight:bold"><a href="#" onclick="loadOtherEditionSummaries('{$id}', true)">{translate text="Other Formats and Languages"}</a></div>&nbsp;
 		</div>
 		{/if}
 
@@ -579,7 +579,6 @@ function redrawSaveStatus() {literal}{{/literal}
 				{/if}
 				 
 				{if $showAmazonReviews || $showStandardReviews}
-				<h4>Professional Reviews</h4>
 				<div id='reviewPlaceholder'></div>
 				{/if}
 			</div>
@@ -620,7 +619,7 @@ function redrawSaveStatus() {literal}{{/literal}
 			<div id = "holdingstab">
 				<div id="holdingsPlaceholder">Loading...</div>
 				{if $showOtherEditionsPopup}
-				<div class="otherEditionCopies">
+				<div class="otherEditionCopies button">
 					<div style="font-weight:bold"><a href="#" onclick="loadOtherEditionSummaries('{$id}', true)">{translate text="Other Formats and Languages"}</a></div>
 				</div>
 				{/if}

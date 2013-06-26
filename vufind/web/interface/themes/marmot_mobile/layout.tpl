@@ -15,17 +15,8 @@
 		//]]>
 		</script>
 
-		{css filename="jqueryui.css"}
-		<link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.1/jquery.mobile-1.1.1.min.css" />
-		{js filename="jquery-1.7.1.min.js"}
-		<script type="text/javascript" src="{$path}/js/jqueryui/jquery-ui-1.8.18.custom.min.js"></script>
-		<script type="text/javascript" src="http://code.jquery.com/mobile/1.1.1/jquery.mobile-1.1.1.min.js"></script>
-		{js filename="common.js"}
-		{js filename="jquery_cookie.js"}
-		{js filename="cart_cookie.js"}
-		{js filename="cart.js"}		
-		{css filename="styles.css"}
-		{css filename="formats.css"}
+		{css filename="consolidated.min.css"}
+		{js filename="consolidated.min.js"}
 	</head> 
 	<body>
 		{if $hold_message}
@@ -60,5 +51,6 @@
 		<div id="lightbox" onclick="hideLightbox(); return false;"></div>
 		<div id="popupbox" class="popupBox"></div>
 		{* End LightBox *}
+		{include file=tracking.tpl}
 	</body>
 </html>

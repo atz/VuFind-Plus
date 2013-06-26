@@ -37,6 +37,7 @@ class Location extends DB_DataObject
 	public $homePageWidgetId;
 	public $boostByLocation;
 	public $recordsToBlackList;
+	public $automaticTimeoutLength;
 
 	/* Static get */
 	function staticGet($k,$v=NULL) { return DB_DataObject::staticGet('Location',$k,$v); }
@@ -46,9 +47,14 @@ class Location extends DB_DataObject
 	}
 
 	function getObjectStructure(){
+		global $user;
 		//Load Libraries for lookup values
 		$library = new Library();
 		$library->orderBy('displayName');
+		if ($user->hasRole('libraryAdmin')){
+			$homeLibrary = Library::getPatronHomeLibrary();
+			$library->libraryId = $homeLibrary->libraryId;
+		}
 		$library->find();
 		$libraryList = array();
 		while ($library->fetch()){
@@ -80,6 +86,7 @@ class Location extends DB_DataObject
 		array('property'=>'libraryId', 'type'=>'enum', 'values'=>$libraryList, 'label'=>'Library', 'description'=>'A link to the library which the location belongs to'),
 		array('property'=>'nearbyLocation1', 'type'=>'enum', 'values'=>$locationLookupList, 'label'=>'Nearby Location 1', 'description'=>'A secondary location which is nearby and could be used for pickup of materials.', 'hideInLists' => true),
 		array('property'=>'nearbyLocation2', 'type'=>'enum', 'values'=>$locationLookupList, 'label'=>'Nearby Location 2', 'description'=>'A tertiary location which is nearby and could be used for pickup of materials.', 'hideInLists' => true),
+		array('property'=>'automaticTimeoutLength', 'type'=>'integer', 'label'=>'Automatic Timeout Length', 'description'=>'The length of time before the user is automatically logged out in seconds.', 'size'=>'8'),
 
 		array('property'=>'displaySection', 'type' => 'section', 'label' =>'Basic Display', 'hideInLists' => true, 'properties' => array(
 			array('property'=>'homeLink', 'type'=>'text', 'label'=>'Home Link', 'description'=>'The location to send the user when they click on the home button or logo.  Use default or blank to go back to the vufind home location.', 'hideInLists' => true),
@@ -358,31 +365,62 @@ class Location extends DB_DataObject
 		global $timer;
 		global $memcache;
 		global $configArray;
-		$timer->logTime('Starting getIPLocation');
+		global $logger;
 		//Check the current IP address to see if we are in a branch
 		$activeIp = $this->getActiveIp();
+		//$logger->log("Active IP is $activeIp", PEAR_LOG_DEBUG);
 		$this->ipLocation = $memcache->get('location_for_ip_' . $activeIp);
 		$this->ipId = $memcache->get('ipId_for_ip_' . $activeIp);
 		if ($this->ipId == -1){
-			$this->ipLocation = null;
+			$this->ipLocation = false;
 		}
 
 		if ($this->ipLocation == false || $this->ipId == false){
+			$timer->logTime('Starting getIPLocation');
 			//echo("Active IP is $activeIp");
-			require_once './Drivers/marmot_inc/ipcalc.php';
 			require_once './Drivers/marmot_inc/subnet.php';
+			$subnet = new subnet();
+			$ipVal = ip2long($activeIp);
+
+			$this->activeIp = '';
+			$this->ipLocation = null;
+			$this->ipId = -1;
+			if (is_numeric($ipVal)){
+				disableErrorHandler();
+				$subnet->whereAdd('startIpVal <= ' . $ipVal);
+				$subnet->whereAdd('endIpVal >= ' . $ipVal);
+				if ($subnet->find(true)){
+					//$logger->log("Found {$subnet->N} matching IP addresses {$subnet->location}", PEAR_LOG_DEBUG);
+					$matchedLocation = new Location();
+					$matchedLocation->locationId = $subnet->locationid;
+					if ($matchedLocation->find(true)){
+						//Only use the physical location regardless of where we are
+						//$logger->log("Active location is {$matchedLocation->displayName}", PEAR_LOG_DEBUG);
+						$this->ipLocation = clone($matchedLocation);
+						$this->ipId = $subnet->id;
+					}else{
+						$logger->log("Did not find location for ip location id {$subnet->locationid}", PEAR_LOG_WARNING);
+					}
+				}
+				enableErrorHandler();
+			}
+			/*require_once './Drivers/marmot_inc/ipcalc.php';
 
 			$subnets = $memcache->get('ip_addresses');
 			if ($subnets == false){
+				$timer->logTime('Starting to load subnets');
 				$subnetSql = new subnet();
 				$subnetSql->find();
 				$subnets = array();
 				while ($subnetSql->fetch()) {
 					$subnets[] = clone $subnetSql;
 				}
+				$timer->logTime('finished loadin subnets');
 				$memcache->set('ip_addresses', $subnets, 0, $configArray['Caching']['ip_addresses']);
 			}
+			$timer->logTime('Starting FindBestMatch');
 			$bestmatch=FindBestMatch($activeIp,$subnets);
+			$timer->logTime('Finished FindBestMatch');
 			//Get the locationId for the subnet.
 			if (isset($bestmatch) && $bestmatch != null){
 				//echo("Best match Location is {$bestmatch->locationid}");
@@ -398,11 +436,12 @@ class Location extends DB_DataObject
 				$this->activeIp = '';
 				$this->ipLocation = null;
 				$this->ipId = -1;
-			}
+			}*/
 			$memcache->set('ipId_for_ip_' . $activeIp, $this->ipId, 0, $configArray['Caching']['ipId_for_ip']);
 			$memcache->set('location_for_ip_' . $activeIp, $this->ipLocation, 0, $configArray['Caching']['location_for_ip']);
+			$timer->logTime('Finished getIPLocation');
 		}
-		$timer->logTime('Finished getIPLocation');
+
 		return $this->ipLocation;
 	}
 

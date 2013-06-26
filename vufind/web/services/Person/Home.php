@@ -41,14 +41,14 @@ class Home extends Action
 		}
 
 		$searchSource = isset($_REQUEST['searchSource']) ? $_REQUEST['searchSource'] : 'local';
-		 
+
 		//Load basic information needed in subclasses
 		if ($record_id == null || !isset($record_id)){
 			$this->id = $_GET['id'];
 		}else{
 			$this->id = $record_id;
 		}
-		 
+
 		// Setup Search Engine Connection
 		// Include Search Engine Class
 		require_once 'sys/' . $configArray['Genealogy']['engine'] . '.php';
@@ -98,7 +98,7 @@ class Home extends Action
 		$interface->assign('id', $this->id);
 
 		$interface->assign('addHeader', '<link rel="alternate" type="application/rdf+xml" title="RDF Representation" href="' .
-		$configArray['Site']['url']  . '/Genealogy/' . urlencode($this->id) . '/RDF">');
+		$configArray['Site']['path']  . '/Genealogy/' . urlencode($this->id) . '/RDF">');
 
 		// Retrieve User Search History
 		$interface->assign('lastsearch', isset($_SESSION['lastSearchURL']) ?
@@ -114,7 +114,7 @@ class Home extends Action
 
 		$formattedDeathdate = $person->formatPartialDate($person->deathDateDay, $person->deathDateMonth, $person->deathDateYear);
 		$interface->assign('deathDate', $formattedDeathdate);
-		
+
 		//Setup next and previous links based on the search results.
 		if (isset($_REQUEST['searchId'])){
 			//rerun the search
@@ -200,7 +200,7 @@ class Home extends Action
 		//Build the actual view
 		$interface->setTemplate('view.tpl');
 
-		$titleField = $this->record['firstName'] . ' ' . $this->record['lastName'];
+		$titleField = $this->recordDriver->getName(); //$this->record['firstName'] . ' ' . $this->record['lastName'];
 		if ($titleField){
 			$interface->setPageTitle($titleField);
 		}

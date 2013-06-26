@@ -54,6 +54,7 @@ class HoldMultiple extends Action
 		global $interface;
 		global $configArray;
 		global $user;
+
 		if (!isset($_REQUEST['selected'])){
 			$hold_message_data = array(
 				'successful' => 'none',
@@ -63,6 +64,7 @@ class HoldMultiple extends Action
 			$showMessage = true;
 		}else{
 			$selectedIds = $_REQUEST['selected'];
+
 			$eContentDriver = null;
 			$showMessage = false;
 
@@ -145,6 +147,22 @@ class HoldMultiple extends Action
 					$profile = $this->catalog->getMyProfile($user);
 					$interface->assign('profile', $profile);
 
+					//Get information to show a warning if the user does not have sufficient holds
+					require_once 'Drivers/marmot_inc/PType.php';
+					$maxHolds = -1;
+					//Determine if we should show a warning
+					$ptype = new PType();
+					$ptype->pType = $user->patronType;
+					if ($ptype->find(true)){
+						$maxHolds = $ptype->maxHolds;
+					}
+					$currentHolds = $profile['numHolds'];
+					if ($maxHolds != -1 && ($currentHolds + count($selectedIds) > $maxHolds)){
+						$interface->assign('showOverHoldLimit', true);
+						$interface->assign('maxHolds', $maxHolds);
+						$interface->assign('currentHolds', $currentHolds);
+					}
+
 					global $locationSingleton;
 					//Get the list of pickup branch locations for display in the user interface.
 					$locations = $locationSingleton->getPickupBranches($profile, $profile['homeLocationId']);
@@ -188,7 +206,7 @@ class HoldMultiple extends Action
 					header("Location: " . $_SESSION['hold_referrer']);
 				} else{
 					//Redirect for hold cancellation or update
-					header("Location: " . $configArray['Site']['url'] . '/MyResearch/Holds');
+					header("Location: " . $configArray['Site']['path'] . '/MyResearch/Holds');
 				}
 				if (!isset($hold_message_data['showItemForm']) || $hold_message_data['showItemForm'] == false){
 					unset($_SESSION['hold_referrer']);
@@ -198,7 +216,7 @@ class HoldMultiple extends Action
 					}
 				}
 			}else{
-				header("Location: " . $configArray['Site']['url'] . '/MyResearch/Holds');
+				header("Location: " . $configArray['Site']['path'] . '/MyResearch/Holds');
 			}
 		} else {
 			$interface->assign('fromCart', isset($_REQUEST['fromCart']));

@@ -49,26 +49,13 @@ class DBMaintenance extends Admin {
 					$updateOk = true;
 					foreach ($sqlStatements as $sql){
 						//Give enough time for long queries to run
-						set_time_limit(120);
-						if (method_exists($this, $sql)){
-							$this->$sql();
-						}else{
-							$result = mysql_query($sql);
-							if ($result == 0 || $result == false){
-								if (isset($update['continueOnError']) && $update['continueOnError']){
-									if (!isset($update['status'])) $update['status'] = '';
-									$update['status'] .= 'Warning: ' . mysql_error() . "<br/>";
-								}else{
-									$update['status'] = 'Update failed ' . mysql_error();
-									$updateOk = false;
-									break;
-								}
-							}else{
-								if (!isset($update['status'])){
-									$update['status'] = 'Update succeeded';
-								}
-							}
 
+						if (method_exists($this, $sql)){
+							$this->$sql(&$update);
+						}else{
+							if (!$this->runSQLStatement(&$update, $sql)){
+								break;
+							}
 						}
 					}
 					if ($updateOk){
@@ -288,6 +275,49 @@ class DBMaintenance extends Admin {
 					"ALTER TABLE `library` ADD `showMarmotResultsAtEndOfSearch` INT(11) DEFAULT 1;",
 				),
 			),
+			'library_21' => array(
+				'title' => 'Library 21',
+				'description' => 'Add the home link text so the breadcrumbs can be customized. ',
+				'dependencies' => array(),
+				'continueOnError' => true,
+				'sql' => array(
+					"ALTER TABLE `library` ADD `homeLinkText` VARCHAR(50) DEFAULT 'Home';",
+				),
+			),
+			'library_23' => array(
+				'title' => 'Library 23',
+				'description' => 'Add the ability to disable wikipedia and the Other format icon by library. ',
+				'dependencies' => array(),
+				'continueOnError' => true,
+				'sql' => array(
+					"ALTER TABLE `library` ADD `showOtherFormatCategory` TINYINT(1) DEFAULT '1';",
+					"ALTER TABLE `library` ADD `showWikipediaContent` TINYINT(1) DEFAULT '1';",
+				),
+			),
+
+			'library_facets' => array(
+				'title' => 'Library Facets',
+				'description' => 'Create Library Facets table to allow library admins to customize their own facets. ',
+				'dependencies' => array(),
+				'continueOnError' => true,
+				'sql' => array(
+					"CREATE TABLE IF NOT EXISTS library_facet_setting (".
+						"`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY, " .
+						"`libraryId` INT NOT NULL, " .
+						"`displayName` VARCHAR(50) NOT NULL, " .
+						"`facetName` VARCHAR(50) NOT NULL, " .
+						"weight INT NOT NULL DEFAULT '0', " .
+						"numEntriesToShowByDefault INT NOT NULL DEFAULT '5', " .
+						"showAsDropDown TINYINT NOT NULL DEFAULT '0', " .
+						"sortMode ENUM ('alphabetically', 'num_results') NOT NULL DEFAULT 'num_results', " .
+						"showAboveResults TINYINT NOT NULL DEFAULT '0', " .
+						"showInResults TINYINT NOT NULL DEFAULT '1', " .
+						"showInAuthorResults TINYINT NOT NULL DEFAULT '1', " .
+						"showInAdvancedSearch TINYINT NOT NULL DEFAULT '1' " .
+					") ENGINE = MYISAM COMMENT = 'A widget that can be displayed within VuFind or within other sites' ",
+					"ALTER TABLE `library_facet_setting` ADD UNIQUE `libraryFacet` (`libraryId`, `facetName`)",
+				),
+			),
 
 			'location_1' => array(
 				'title' => 'Location 1',
@@ -325,6 +355,15 @@ class DBMaintenance extends Admin {
 				'continueOnError' => true,
 				'sql' => array(
 					"ALTER TABLE `location` ADD `recordsToBlackList` MEDIUMTEXT;",
+				),
+			),
+
+			'location_5' => array(
+				'title' => 'Location 5',
+				'description' => 'Add ability to configure the automatic timeout length. ',
+				'dependencies' => array(),
+				'sql' => array(
+					"ALTER TABLE `location` ADD `automaticTimeoutLength` INT(11) DEFAULT '90';",
 				),
 			),
 
@@ -388,6 +427,15 @@ class DBMaintenance extends Admin {
 				'sql' => array(
 					"ALTER TABLE `list_widgets` ADD COLUMN `autoRotate` TINYINT NOT NULL DEFAULT '0'",
 					"ALTER TABLE `list_widgets` ADD COLUMN `showMultipleTitles` TINYINT NOT NULL DEFAULT '1'",
+				),
+			),
+
+			'list_widgets_update_2' => array(
+				'title' => 'List Widget Update 2',
+				'description' => 'Add library id to list widget',
+				'dependencies' => array(),
+				'sql' => array(
+					"ALTER TABLE `list_widgets` ADD COLUMN `libraryId` INT(11) NOT NULL DEFAULT '-1'",
 				),
 			),
 
@@ -550,6 +598,15 @@ class DBMaintenance extends Admin {
 				'dependencies' => array(),
 				'sql' => array(
 					"ALTER TABLE editorial_reviews add tabName VARCHAR(25) DEFAULT 'Reviews';",
+				),
+			),
+
+			'editorial_review_2' => array(
+				'title' => 'Add teaser to editorial reviews',
+				'description' => 'Update editorial reviews to include a teaser',
+				'dependencies' => array(),
+				'sql' => array(
+					"ALTER TABLE editorial_reviews add teaser VARCHAR(512);",
 				),
 			),
 
@@ -938,6 +995,32 @@ class DBMaintenance extends Admin {
 				),
 			),
 
+			'ip_lookup_1' => array(
+				'title' => 'IP Lookup Update 1',
+				'description' => 'Add start and end ranges for IP Lookup table to improve performance.',
+				'dependencies' => array(),
+				'continueOnError' => true,
+				'sql' => array(
+					"ALTER TABLE ip_lookup ADD COLUMN startIpVal BIGINT",
+					"ALTER TABLE ip_lookup ADD COLUMN endIpVal BIGINT",
+					"ALTER TABLE `ip_lookup` ADD INDEX ( `startIpVal` )",
+					"ALTER TABLE `ip_lookup` ADD INDEX ( `endIpVal` )",
+					"createDefaultIpRanges"
+				),
+			),
+
+			'ip_lookup_2' => array(
+				'title' => 'IP Lookup Update 2',
+				'description' => 'Change start and end ranges to be big integers.',
+				'dependencies' => array(),
+				'continueOnError' => true,
+				'sql' => array(
+					"ALTER TABLE `ip_lookup` CHANGE `startIpVal` `startIpVal` BIGINT NULL DEFAULT NULL ",
+					"ALTER TABLE `ip_lookup` CHANGE `endIpVal` `endIpVal` BIGINT NULL DEFAULT NULL ",
+					"createDefaultIpRanges"
+				),
+			),
+
 			'indexUsageTracking' => array(
 				'title' => 'Index Usage Tracking',
 				'description' => 'Update Usage Tracking to include index based on ip and tracking date',
@@ -1170,6 +1253,111 @@ class DBMaintenance extends Admin {
 			),
 		),
 
+		'alpha_browse_setup_5' => array(
+			'title' => 'Alphabetic Browse scoped tables',
+			'description' => 'Create Scoping tables for global and all libraries.',
+			'continueOnError' => true,
+			'dependencies' => array(),
+			'sql' => array(
+				//Add firstChar fields
+				"ALTER TABLE `title_browse` ADD `firstChar` CHAR( 1 ) NOT NULL",
+				"ALTER TABLE title_browse ADD INDEX ( `firstChar` )",
+				'UPDATE title_browse set firstChar = substr(sortValue, 1, 1);',
+				"ALTER TABLE `author_browse` ADD `firstChar` CHAR( 1 ) NOT NULL",
+				"ALTER TABLE author_browse ADD INDEX ( `firstChar` )",
+				'UPDATE author_browse set firstChar = substr(sortValue, 1, 1);',
+				"ALTER TABLE `subject_browse` ADD `firstChar` CHAR( 1 ) NOT NULL",
+				"ALTER TABLE subject_browse ADD INDEX ( `firstChar` )",
+				'UPDATE subject_browse set firstChar = substr(sortValue, 1, 1);',
+				"ALTER TABLE `callnumber_browse` ADD `firstChar` CHAR( 1 ) NOT NULL",
+				"ALTER TABLE callnumber_browse ADD INDEX ( `firstChar` )",
+				'UPDATE callnumber_browse set firstChar = substr(sortValue, 1, 1);',
+				//Create global tables
+				'CREATE TABLE `title_browse_scoped_results_global` (
+					`browseValueId` INT( 11 ) NOT NULL ,
+					`record` VARCHAR( 50 ) NOT NULL ,
+					PRIMARY KEY ( `browseValueId` , `record` ) ,
+					INDEX ( `browseValueId` )
+				) ENGINE = MYISAM',
+				'CREATE TABLE `author_browse_scoped_results_global` (
+					`browseValueId` INT( 11 ) NOT NULL ,
+					`record` VARCHAR( 50 ) NOT NULL ,
+					PRIMARY KEY ( `browseValueId` , `record` ) ,
+					INDEX ( `browseValueId` )
+				) ENGINE = MYISAM',
+				'CREATE TABLE `subject_browse_scoped_results_global` (
+					`browseValueId` INT( 11 ) NOT NULL ,
+					`record` VARCHAR( 50 ) NOT NULL ,
+					PRIMARY KEY ( `browseValueId` , `record` ) ,
+					INDEX ( `browseValueId` )
+				) ENGINE = MYISAM',
+				'CREATE TABLE `callnumber_browse_scoped_results_global` (
+					`browseValueId` INT( 11 ) NOT NULL ,
+					`record` VARCHAR( 50 ) NOT NULL ,
+					PRIMARY KEY ( `browseValueId` , `record` ) ,
+					INDEX ( `browseValueId` )
+				) ENGINE = MYISAM',
+				//Truncate old data
+				"TRUNCATE TABLE `title_browse_scoped_results_global`",
+				"TRUNCATE TABLE `author_browse_scoped_results_global`",
+				"TRUNCATE TABLE `subject_browse_scoped_results_global`",
+				"TRUNCATE TABLE `callnumber_browse_scoped_results_global`",
+				//Load data from old method into tables
+				'INSERT INTO title_browse_scoped_results_global (`browseValueId`, record)
+					SELECT title_browse_scoped_results.browseValueId, title_browse_scoped_results.record
+					FROM title_browse_scoped_results
+					WHERE scope = 0;',
+				'INSERT INTO author_browse_scoped_results_global (`browseValueId`, record)
+					SELECT author_browse_scoped_results.browseValueId, author_browse_scoped_results.record
+					FROM author_browse_scoped_results
+					WHERE scope = 0;',
+				'INSERT INTO subject_browse_scoped_results_global (`browseValueId`, record)
+					SELECT subject_browse_scoped_results.browseValueId, subject_browse_scoped_results.record
+					FROM subject_browse_scoped_results
+					WHERE scope = 0;',
+				'INSERT INTO callnumber_browse_scoped_results_global (`browseValueId`, record)
+					SELECT callnumber_browse_scoped_results.browseValueId, callnumber_browse_scoped_results.record
+					FROM callnumber_browse_scoped_results
+					WHERE scope = 0;',
+				'createScopingTables',
+				'DROP TABLE title_browse_scoped_results',
+				'DROP TABLE author_browse_scoped_results',
+				'DROP TABLE subject_browse_scoped_results',
+				'DROP TABLE callnumber_browse_scoped_results',
+
+			),
+		),
+
+		'alpha_browse_setup_6' => array(
+			'title' => 'Alphabetic Browse second letter',
+			'description' => 'Add second char to the tables.',
+			'continueOnError' => true,
+			'dependencies' => array(),
+			'sql' => array(
+				"ALTER TABLE `title_browse` ADD `secondChar` CHAR( 1 ) NOT NULL",
+				"ALTER TABLE title_browse ADD INDEX ( `secondChar` )",
+				'UPDATE title_browse set secondChar = substr(sortValue, 2, 1);',
+				"ALTER TABLE `author_browse` ADD `secondChar` CHAR( 1 ) NOT NULL",
+				"ALTER TABLE author_browse ADD INDEX ( `secondChar` )",
+				'UPDATE author_browse set secondChar = substr(sortValue, 2, 1);',
+				"ALTER TABLE `subject_browse` ADD `secondChar` CHAR( 1 ) NOT NULL",
+				"ALTER TABLE subject_browse ADD INDEX ( `secondChar` )",
+				'UPDATE subject_browse set secondChar = substr(sortValue, 2, 1);',
+				"ALTER TABLE `callnumber_browse` ADD `secondChar` CHAR( 1 ) NOT NULL",
+				"ALTER TABLE callnumber_browse ADD INDEX ( `secondChar` )",
+				'UPDATE callnumber_browse set secondChar = substr(sortValue, 2, 1);',
+			),
+		),
+
+		'alpha_browse_setup_7' => array(
+			'title' => 'Alphabetic Browse change scoping engine',
+			'description' => 'Change DB Engine to INNODB for all scoping tables.',
+			'continueOnError' => true,
+			'dependencies' => array(),
+			'sql' => array(
+				"setScopingTableEngine",
+			),
+		),
 
 
 		'reindexLog' => array(
@@ -1344,6 +1532,28 @@ class DBMaintenance extends Admin {
 			),
 		),
 
+		'remove_old_tables_2' => array(
+			'title' => 'Remove old tables 2',
+			'description' => 'Remove tables that are no longer needed due to changes in functionality',
+			'dependencies' => array(),
+			'sql' => array(
+				'DROP TABLE IF EXISTS administrators',
+				'DROP TABLE IF EXISTS administrators_to_roles',
+				'DROP TABLE IF EXISTS resource_callnumber',
+				'DROP TABLE IF EXISTS resource_subject',
+			),
+		),
+
+		'remove_old_tables_3' => array(
+			'title' => 'Remove usage tracking tables',
+			'description' => 'Remove usage tracking tables (replaced with better analytics)',
+			'dependencies' => array(),
+			'sql' => array(
+				'DROP TABLE IF EXISTS usagetracking',
+				'DROP TABLE IF EXISTS usage_tracking',
+			),
+		),
+
 		'rename_tables' => array(
 			'title' => 'Rename tables',
 			'description' => 'Rename tables for consistency and cross platform usage',
@@ -1485,6 +1695,98 @@ class DBMaintenance extends Admin {
 			),
 		),
 
+		'ptype' => array(
+			'title' => 'P-Type',
+			'description' => 'Create tables to store information related to P-Types.',
+			'dependencies' => array(),
+			'sql' => array(
+				'CREATE TABLE IF NOT EXISTS ptype(
+					id INT(11) NOT NULL AUTO_INCREMENT,
+					pType INT(11) NOT NULL,
+					maxHolds INT(11) NOT NULL DEFAULT 300,
+					UNIQUE KEY (pType),
+					PRIMARY KEY (id)
+				)',
+			),
+		),
+
+		'analytics' => array(
+			'title' => 'Analytics',
+			'description' => 'Create tables to store analytics information.',
+			'dependencies' => array(),
+			'continueOnError' => true,
+			'sql' => array(
+				"CREATE TABLE IF NOT EXISTS analytics_session(" .
+					"`id` INT(11) NOT NULL AUTO_INCREMENT, " .
+					"`session_id` VARCHAR(128), " .
+					"`sessionStartTime` INT(11) NOT NULL, " .
+					"`lastRequestTime` INT(11) NOT NULL, " .
+					"`country` VARCHAR(128) , " .
+					"`city` VARCHAR(128), " .
+					"`state` VARCHAR(128), " .
+					"`latitude` FLOAT, " .
+					"`longitude` FLOAT, " .
+					"`ip` CHAR(16), " .
+					"`theme` VARCHAR(128), " .
+					"`mobile` TINYINT, " .
+					"`device` VARCHAR(128), " .
+					"`physicalLocation` VARCHAR(128), " .
+					"`patronType` VARCHAR(50) NOT NULL DEFAULT 'logged out', " .
+					"`homeLocationId` INT(11), " .
+					"UNIQUE KEY ( `session_id` ), " .
+					"PRIMARY KEY ( `id` )" .
+				") ENGINE = InnoDB",
+				"CREATE TABLE IF NOT EXISTS analytics_page_view(" .
+					"`id` INT(11) NOT NULL AUTO_INCREMENT, " .
+					"`sessionId` INT(11), " .
+					"`pageStartTime` INT(11), " .
+					"`pageEndTime` INT(11), "  .
+					"`module` VARCHAR(128), " .
+					"`action` VARCHAR(128), " .
+					"`method` VARCHAR(128), " .
+					"`objectId` VARCHAR(128), " .
+					"`fullUrl` VARCHAR(1024), " .
+					"`language` VARCHAR(128), " .
+					"INDEX ( `sessionId` ), " .
+					"PRIMARY KEY ( `id` )" .
+				") ENGINE = InnoDB",
+				"CREATE TABLE IF NOT EXISTS analytics_search(" .
+					"`id` INT(11) NOT NULL AUTO_INCREMENT, " .
+					"`sessionId` INT(11), " .
+					"`searchType` VARCHAR(30), " .
+					"`scope` VARCHAR(50), "  .
+					"`lookfor` VARCHAR(256), " .
+					"`isAdvanced` TINYINT, " .
+					"`facetsApplied` TINYINT, " .
+					"`numResults` INT(11), " .
+					"INDEX ( `sessionId` ), " .
+					"PRIMARY KEY ( `id` )" .
+				") ENGINE = InnoDB",
+				"CREATE TABLE IF NOT EXISTS analytics_event(" .
+					"`id` INT(11) NOT NULL AUTO_INCREMENT, " .
+					"`sessionId` INT(11), " .
+					"`category` VARCHAR(100), " .
+					"`action` VARCHAR(100), "  .
+					"`data` VARCHAR(256), " .
+					"INDEX ( `sessionId` ), " .
+					"INDEX ( `category` ), " .
+					"INDEX ( `action` ), " .
+					"PRIMARY KEY ( `id` )" .
+				") ENGINE = InnoDB",
+			),
+		),
+
+		'analytics_1' => array(
+			'title' => 'Analytics Update 1',
+			'description' => 'Add times to searches and events.',
+			'dependencies' => array(),
+			'continueOnError' => true,
+			'sql' => array(
+				'ALTER TABLE analytics_event ADD COLUMN eventTime INT(11)',
+				'ALTER TABLE analytics_search ADD COLUMN searchTime INT(11)'
+			),
+		),
+
 		'session_update_1' => array(
 			'title' => 'Session Update 1',
 			'description' => 'Add a field for whether or not the session was started with remember me on.',
@@ -1567,4 +1869,122 @@ class DBMaintenance extends Admin {
 		}
 	}
 
+	function createScopingTables($update){
+		//Create global scoping tables
+		$library = new Library();
+		$library->find();
+		while ($library->fetch()){
+			$this->runSQLStatement(&$update,
+				"CREATE TABLE `title_browse_scoped_results_library_{$library->subdomain}` (
+					`browseValueId` INT( 11 ) NOT NULL ,
+					`record` VARCHAR( 50 ) NOT NULL ,
+					PRIMARY KEY ( `browseValueId` , `record` ) ,
+					INDEX ( `browseValueId` )
+				) ENGINE = MYISAM");
+			$this->runSQLStatement(&$update,
+				"CREATE TABLE `author_browse_scoped_results_library_{$library->subdomain}` (
+					`browseValueId` INT( 11 ) NOT NULL ,
+					`record` VARCHAR( 50 ) NOT NULL ,
+					PRIMARY KEY ( `browseValueId` , `record` ) ,
+					INDEX ( `browseValueId` )
+				) ENGINE = MYISAM");
+			$this->runSQLStatement(&$update,
+				"CREATE TABLE `subject_browse_scoped_results_library_{$library->subdomain}` (
+					`browseValueId` INT( 11 ) NOT NULL ,
+					`record` VARCHAR( 50 ) NOT NULL ,
+					PRIMARY KEY ( `browseValueId` , `record` ) ,
+					INDEX ( `browseValueId` )
+				) ENGINE = MYISAM");
+			$this->runSQLStatement(&$update,
+				"CREATE TABLE `callnumber_browse_scoped_results_library_{$library->subdomain}` (
+					`browseValueId` INT( 11 ) NOT NULL ,
+					`record` VARCHAR( 50 ) NOT NULL ,
+					PRIMARY KEY ( `browseValueId` , `record` ) ,
+					INDEX ( `browseValueId` )
+				) ENGINE = MYISAM");
+			//Truncate old data
+			$this->runSQLStatement(&$update, "TRUNCATE TABLE `title_browse_scoped_results_library_{$library->subdomain}`");
+			$this->runSQLStatement(&$update, "TRUNCATE TABLE `author_browse_scoped_results_library_{$library->subdomain}`");
+			$this->runSQLStatement(&$update, "TRUNCATE TABLE `subject_browse_scoped_results_library_{$library->subdomain}`");
+			$this->runSQLStatement(&$update, "TRUNCATE TABLE `callnumber_browse_scoped_results_library_{$library->subdomain}`");
+			$this->runSQLStatement(&$update,
+				"INSERT INTO title_browse_scoped_results_library_{$library->subdomain} (`browseValueId`, record)
+					SELECT title_browse_scoped_results.browseValueId, title_browse_scoped_results.record
+					FROM title_browse_scoped_results
+					WHERE scope = 1 and scopeId = {$library->libraryId};");
+			$this->runSQLStatement(&$update,
+				"INSERT INTO author_browse_scoped_results_library_{$library->subdomain} (`browseValueId`, record)
+					SELECT author_browse_scoped_results.browseValueId, author_browse_scoped_results.record
+					FROM author_browse_scoped_results
+					WHERE scope = 1 and scopeId = {$library->libraryId};");
+			$this->runSQLStatement(&$update,
+				"INSERT INTO subject_browse_scoped_results_library_{$library->subdomain} (`browseValueId`, record)
+					SELECT subject_browse_scoped_results.browseValueId, subject_browse_scoped_results.record
+					FROM subject_browse_scoped_results
+					WHERE scope = 1 and scopeId = {$library->libraryId};");
+			$this->runSQLStatement(&$update,
+				"INSERT INTO callnumber_browse_scoped_results_library_{$library->subdomain} (`browseValueId`, record)
+					SELECT callnumber_browse_scoped_results.browseValueId, callnumber_browse_scoped_results.record
+					FROM callnumber_browse_scoped_results
+					WHERE scope = 1 and scopeId = {$library->libraryId};");
+		}
+
+		//TODO: Convert tables that do lots of indexing to INNODB
+
+	}
+
+	function setScopingTableEngine($update){
+		//$this->runSQLStatement(&$update, "ALTER TABLE `title_browse_scoped_results_global` ENGINE = InnoDB");
+		$this->runSQLStatement(&$update, "ALTER TABLE `title_browse_scoped_results_global` ADD INDEX ( `record` )");
+		//$this->runSQLStatement(&$update, "ALTER TABLE `author_browse_scoped_results_global` ENGINE = InnoDB");
+		$this->runSQLStatement(&$update, "ALTER TABLE `author_browse_scoped_results_global` ADD INDEX ( `record` )");
+		//$this->runSQLStatement(&$update, "ALTER TABLE `subject_browse_scoped_results_global` ENGINE = InnoDB");
+		$this->runSQLStatement(&$update, "ALTER TABLE `subject_browse_scoped_results_global` ADD INDEX ( `record` )");
+		//$this->runSQLStatement(&$update, "ALTER TABLE `callnumber_browse_scoped_results_global` ENGINE = InnoDB");
+		$this->runSQLStatement(&$update, "ALTER TABLE `callnumber_browse_scoped_results_global` ADD INDEX ( `record` )");
+
+		$library = new Library();
+		$library->find();
+		while ($library->fetch()){
+			//$this->runSQLStatement(&$update, "ALTER TABLE `title_browse_scoped_results_library_{$library->subdomain}` ENGINE = InnoDB");
+			$this->runSQLStatement(&$update, "ALTER TABLE `title_browse_scoped_results_library_{$library->subdomain}` ADD INDEX ( `record` )");
+			//$this->runSQLStatement(&$update, "ALTER TABLE `author_browse_scoped_results_library_{$library->subdomain}` ENGINE = InnoDB");
+			$this->runSQLStatement(&$update, "ALTER TABLE `author_browse_scoped_results_library_{$library->subdomain}` ADD INDEX ( `record` )");
+			//$this->runSQLStatement(&$update, "ALTER TABLE `subject_browse_scoped_results_library_{$library->subdomain}` ENGINE = InnoDB");
+			$this->runSQLStatement(&$update, "ALTER TABLE `subject_browse_scoped_results_library_{$library->subdomain}` ADD INDEX ( `record` )");
+			//$this->runSQLStatement(&$update, "ALTER TABLE `callnumber_browse_scoped_results_library_{$library->subdomain}` ENGINE = InnoDB");
+			$this->runSQLStatement(&$update, "ALTER TABLE `callnumber_browse_scoped_results_library_{$library->subdomain}` ADD INDEX ( `record` )");
+
+		}
+	}
+
+	function runSQLStatement($update, $sql){
+		set_time_limit(500);
+		$result = mysql_query($sql);
+		$updateOk = true;
+		if ($result == 0 || $result == false){
+			if (isset($update['continueOnError']) && $update['continueOnError']){
+				if (!isset($update['status'])) $update['status'] = '';
+				$update['status'] .= 'Warning: ' . mysql_error() . "<br/>";
+			}else{
+				$update['status'] = 'Update failed ' . mysql_error();
+				$updateOk = false;
+			}
+		}else{
+			if (!isset($update['status'])){
+				$update['status'] = 'Update succeeded';
+			}
+		}
+		return $updateOk;
+	}
+
+	function createDefaultIpRanges(){
+		require_once 'Drivers/marmot_inc/ipcalc.php';
+		require_once 'Drivers/marmot_inc/subnet.php';
+		$subnet = new subnet();
+		$subnet->find();
+		while ($subnet->fetch()){
+			$subnet->update();
+		}
+	}
 }

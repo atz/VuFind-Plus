@@ -27,6 +27,10 @@
 				</script>
 			{/if}
 
+			{if $profile.web_note}
+				<div id="web_note">{$profile.web_note}</div>
+			{/if}
+			
 			<div class="myAccountTitle">{translate text='Titles On Hold'}</div>
 			{if $userNoticeFile}
 				{include file=$userNoticeFile}
@@ -57,7 +61,7 @@
 										<input type="submit" class="button" name="thawSelected" value="Activate Selected" title="Activate the hold to allow the hold to be filled again." onclick="return thawSelectedHolds();"/>
 									{/if}
 									<input type="submit" class="button" name="cancelSelected" value="Cancel Selected" onclick="return cancelSelectedHolds();"/>
-									<input type="submit" class="button" id="exportToExcel{if $sectionKey=='available'}Available{else}Unavailable{/if}" name="exportToExcel{if $sectionKey=='available'}Available{else}Unavailable{/if}" value="Export to Excel">
+									<input type="submit" class="button" id="exportToExcel{if $sectionKey=='available'}Available{else}Unavailable{/if}" name="exportToExcel{if $sectionKey=='available'}Available{else}Unavailable{/if}" value="Export to Excel" />
 								</div>
 							</div>
 						</form> {* End with selected controls for holds *}
@@ -147,7 +151,7 @@
 												<div class="searchResultSectionInfo">
 													{$record.title2|regex_replace:"/(\/|:)$/":""|truncate:180:"..."|highlight:$lookfor}
 												</div>
-												{/if}f
+												{/if}
 										</div>
 
 										<div class="resultItemLine2">

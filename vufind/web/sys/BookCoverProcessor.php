@@ -79,7 +79,7 @@ class BookCoverProcessor{
 						$ret = $epubFile->updateDetailed(false); //Don't update solr for performance reasons
 						$this->log("Result of saving cover url is $ret", PEAR_LOG_INFO);
 					}
-				}elseif (preg_match('/Colorado State Gov\\. Docs/si', $epubFile->source) == 1){
+				}elseif (preg_match('/Colorado State Gov\\. Docs/si', $epubFile->source) == 1 || $epubFile->source == 'CO State Gov Docs' ){
 					//Cover is colorado state flag
 					$this->log("Record is a gov docs file.", PEAR_LOG_INFO);
 					$themeName = $this->configArray['Site']['theme'];
@@ -385,7 +385,7 @@ class BookCoverProcessor{
 	function getDefaultCover(){
 		$useDefaultNoCover = true;
 
-		$this->log("Looking for default cover, format is {$this->format} category is {$this->category}");
+		$this->log("Looking for default cover, format is {$this->format} category is {$this->category}", PEAR_LOG_DEBUG);
 		$themeName = $this->configArray['Site']['theme'];
 		if (isset($this->format) && strlen($this->format) > 0){
 
@@ -455,7 +455,7 @@ class BookCoverProcessor{
 			// $cache is true or for temporary display purposes if $cache is false.
 			$tempFile = str_replace('.png', uniqid(), $this->cacheFile);
 			$finalFile = $cache ? $this->cacheFile : $tempFile . '.png';
-			$this->log("Processing url $url to $finalFile");
+			$this->log("Processing url $url to $finalFile", PEAR_LOG_DEBUG);
 
 			// If some services can't provide an image, they will serve a 1x1 blank
 			// or give us invalid image data.  Let's analyze what came back before

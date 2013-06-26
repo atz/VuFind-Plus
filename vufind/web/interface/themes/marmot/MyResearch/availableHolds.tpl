@@ -27,6 +27,9 @@
 				</script>
 			{/if}
 
+			{if $profile.web_note}
+				<div id="web_note">{$profile.web_note}</div>
+			{/if}
 
 			<div class="myAccountTitle">{translate text='Holds Ready For Pickup'}</div>
 			{if $userNoticeFile}
@@ -47,7 +50,7 @@
 								<input type="hidden" name="withSelectedAction" value="" />
 								<div id='holdsUpdateSelected{$sectionKey}'>
 									<input type="submit" class="button" name="cancelSelected" value="Cancel Selected" onclick="return cancelSelectedHolds();"/>
-									<input type="submit" class="button" id="exportToExcel{if $sectionKey=='available'}Available{else}Unavailable{/if}" name="exportToExcel{if $sectionKey=='available'}Available{else}Unavailable{/if}" value="Export to Excel">
+									<input type="submit" class="button" id="exportToExcel{if $sectionKey=='available'}Available{else}Unavailable{/if}" name="exportToExcel{if $sectionKey=='available'}Available{else}Unavailable{/if}" value="Export to Excel" />
 								</div>
 							</div>
 						</form> {* End with selected controls for holds *}

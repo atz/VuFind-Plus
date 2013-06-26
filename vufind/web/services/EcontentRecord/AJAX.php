@@ -11,13 +11,15 @@ class AJAX extends Action {
 	}
 
 	function launch() {
+		global $analytics;
+		$analytics->disableTracking();
 		$method = $_GET['method'];
 		if (in_array($method, array('RateTitle', 'GetSeriesTitles', 'GetComments', 'DeleteItem', 'SaveComment', 'CheckoutOverDriveItem', 'PlaceOverDriveHold', 'AddOverDriveRecordToWishList', 'RemoveOverDriveRecordFromWishList', 'CancelOverDriveHold'))){
 			header('Content-type: text/plain');
 			header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
 			header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Date in the past
 			echo $this->$method();
-		}else if (in_array($method, array('GetGoDeeperData', 'AddItem', 'EditItem', 'GetOverDriveLoanPeriod', 'getPurchaseOptions'))){
+		}else if (in_array($method, array('GetGoDeeperData', 'AddItem', 'EditItem', 'GetOverDriveLoanPeriod', 'getPurchaseOptions', 'getDescription'))){
 			header('Content-type: text/html');
 			header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
 			header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Date in the past
@@ -179,11 +181,35 @@ class AJAX extends Action {
 		}
 		$interface->assign('record', $eContentRecord);
 		$interface->assign('availability', $driver->getScopedAvailability($eContentRecord));
+		$showAvailability = true;
+		if ($eContentRecord->accessType == 'external' && strcasecmp($eContentRecord->source, 'OverDrive') != 0){
+			$showAvailability = false;
+		}
+		$interface->assign('showAvailability', $showAvailability);
 		$interface->assign('source', $eContentRecord->source);
+		$interface->assign('accessType', $eContentRecord->accessType);
 		$interface->assign('showEContentNotes', $showEContentNotes);
 		if ($eContentRecord->getIsbn() == null || strlen($eContentRecord->getIsbn()) == 0){
 			$interface->assign('showOtherEditionsPopup', false);
 		}
+		$showOverDriveConsole = false;
+		$showAdobeDigitalEditions = false;
+		foreach ($holdings as $item){
+			if (strcasecmp($item->getSource(), 'overdrive') == 0){
+				if (in_array($item->externalFormatId, array('ebook-epub-adobe', 'ebook-pdf-adobe'))){
+					$showAdobeDigitalEditions = true;
+				}else if (in_array($item->externalFormatId, array('video-wmv', 'music-wma', 'music-wma', 'audiobook-wma', 'audiobook-mp3'))){
+					$showOverDriveConsole = true;
+				}
+			}else{
+				if (in_array($item->item_type, array('epub', 'pdf'))){
+					$showAdobeDigitalEditions = true;
+				}
+			}
+		}
+		$interface->assign('showOverDriveConsole', $showOverDriveConsole);
+		$interface->assign('showAdobeDigitalEditions', $showAdobeDigitalEditions);
+
 		$interface->assign('holdings', $holdings);
 		//Load status summary
 		$result = $driver->getStatusSummary($id, $holdings);
@@ -394,16 +420,14 @@ class AJAX extends Action {
 		$eContentRecord->id = $id;
 		$eContentRecord->find(true);
 
-		$output = "<result>\n";
+		require_once 'Description.php';
+		$descriptionInfo = Description::loadDescription($eContentRecord);
 
-		// Build an XML tag representing the current comment:
-		$output .= "	<description><![CDATA[" . $eContentRecord->description . "]]></description>\n";
-		$output .= "	<length><![CDATA[" . "" . "]]></length>\n";
-		$output .= "	<publisher><![CDATA[" . $eContentRecord->publisher . "]]></publisher>\n";
+		$interface->assign('description', $descriptionInfo['description']);
+		$interface->assign('length', $eContentRecord->physicalDescription);
+		$interface->assign('publisher', $eContentRecord->publisher);
 
-		$output .= "</result>\n";
-
-		return $output;
+		return $interface->fetch('Record/ajax-description-popup.tpl');
 	}
 	function AddItem(){
 		require_once 'sys/eContent/EContentItem.php';

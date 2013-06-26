@@ -136,7 +136,22 @@ class Home extends Action{
 				}
 			}
 			$interface->assign('additionalAuthorsList', $eContentRecord->getPropertyArray('author2'));
-			$interface->assign('subjectList', $eContentRecord->getPropertyArray('subject'));
+			$rawSubjects = $eContentRecord->getPropertyArray('subject');
+			$subjects = array();
+			foreach ($rawSubjects as $subject){
+				$explodedSubjects = explode(' -- ', $subject);
+				$searchSubject = "";
+				$subject = array();
+				foreach ($explodedSubjects as $tmpSubject){
+					$searchSubject .= $tmpSubject . ' ';
+					$subject[] = array(
+		        'search' => trim($searchSubject),
+		        'title'  => $tmpSubject,
+					);
+				}
+				$subjects[] = $subject;
+			}
+			$interface->assign('subjects', $subjects);
 			$interface->assign('lccnList', $eContentRecord->getPropertyArray('lccn'));
 			$interface->assign('isbnList', $eContentRecord->getPropertyArray('isbn'));
 			$interface->assign('isbn', $eContentRecord->getIsbn());
@@ -196,6 +211,64 @@ class Home extends Action{
 			$tags = $resource->getTags($limit);
 			$interface->assign('tagList', $tags);
 			$timer->logTime('Got tag list');
+
+			//Load notes if any
+			$marcRecord = MarcLoader::loadEContentMarcRecord($eContentRecord);
+			if ($marcRecord){
+				$tableOfContents = array();
+				$marcFields505 = $marcRecord->getFields('505');
+				if ($marcFields505){
+					$tableOfContents = $this->processTableOfContentsFields($marcFields505);
+				}
+
+				$notes = array();
+				$marcFields500 = $marcRecord->getFields('500');
+				$marcFields504 = $marcRecord->getFields('504');
+				$marcFields511 = $marcRecord->getFields('511');
+				$marcFields518 = $marcRecord->getFields('518');
+				$marcFields520 = $marcRecord->getFields('520');
+				if ($marcFields500 || $marcFields504 || $marcFields505 || $marcFields511 || $marcFields518 || $marcFields520){
+					$allFields = array_merge($marcFields500, $marcFields504, $marcFields511, $marcFields518, $marcFields520);
+					$notes = $this->processNoteFields($allFields);
+				}
+
+				if ((isset($library) && $library->showTableOfContentsTab == 0) || count($tableOfContents) == 0) {
+					$notes = array_merge($notes, $tableOfContents);
+				}else{
+					$interface->assign('tableOfContents', $tableOfContents);
+				}
+				if (isset($library)){
+					$interface->assign('notesTabName', $library->notesTabName);
+				}else{
+					$interface->assign('notesTabName', 'Notes');
+				}
+
+				$additionalNotesFields = array(
+		          '310' => 'Current Publication Frequency',
+		          '321' => 'Former Publication Frequency',
+		          '351' => 'Organization & arrangement of materials',
+		          '362' => 'Dates of publication and/or sequential designation',
+				      '590' => 'Local note',
+
+				);
+				foreach ($additionalNotesFields as $tag => $label){
+					$marcFields = $marcRecord->getFields($tag);
+					foreach ($marcFields as $marcField){
+						$noteText = array();
+						foreach ($marcField->getSubFields() as $subfield){
+							$noteText[] = $subfield->getData();
+						}
+						$note = implode(',', $noteText);
+						if (strlen($note) > 0){
+							$notes[] = $label . ': ' . $note;
+						}
+					}
+				}
+
+				if (count($notes) > 0){
+					$interface->assign('notes', $notes);
+				}
+			}
 
 			//Load the Editorial Reviews
 			//Populate an array of editorialReviewIds that match up with the recordId
@@ -350,7 +423,10 @@ class Home extends Action{
 							if (isset($previousResults)){
 								$previousRecord = $previousResults[count($previousResults) -1];
 							}else{
-								$previousRecord = $recordSet[$currentResultIndex - 1 - (($currentPage -1) * $recordsPerPage)];
+								$previousId = $currentResultIndex - 1;
+								if (isset($recordSet[$previousId])){
+									$previousRecord = $recordSet[$previousId];
+								}
 							}
 
 							//Convert back to 1 based index
@@ -369,7 +445,10 @@ class Home extends Action{
 							if (isset($nextResults)){
 								$nextRecord = $nextResults[0];
 							}else{
-								$nextRecord = $recordSet[$currentResultIndex + 1 - (($currentPage -1) * $recordsPerPage)];
+								$nextRecordIndex = $currentResultIndex + 1;
+								if (isset($recordSet[$nextRecordIndex])){
+									$nextRecord = $recordSet[$nextRecordIndex];
+								}
 							}
 							//Convert back to 1 based index
 							$interface->assign('nextIndex', $currentResultIndex + 1 + 1);
@@ -388,5 +467,39 @@ class Home extends Action{
 			}
 			$timer->logTime('Got next/previous links');
 		}
+	}
+
+	function processNoteFields($allFields){
+		$notes = array();
+		foreach ($allFields as $marcField){
+			foreach ($marcField->getSubFields() as $subfield){
+				$note = $subfield->getData();
+				if ($subfield->getCode() == 't'){
+					$note = "&nbsp;&nbsp;&nbsp;" . $note;
+				}
+				$note = trim($note);
+				if (strlen($note) > 0){
+					$notes[] = $note;
+				}
+			}
+		}
+		return $notes;
+	}
+
+	function processTableOfContentsFields($allFields){
+		$notes = array();
+		foreach ($allFields as $marcField){
+			$curNote = '';
+			foreach ($marcField->getSubFields() as $subfield){
+				$note = $subfield->getData();
+				$curNote .= " " . $note;
+				$curNote = trim($curNote);
+				if (strlen($curNote) > 0 && in_array($subfield->getCode(), array('t', 'a'))){
+					$notes[] = $curNote;
+					$curNote = '';
+				}
+			}
+		}
+		return $notes;
 	}
 }

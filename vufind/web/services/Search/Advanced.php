@@ -27,6 +27,7 @@ class Advanced extends Action {
 		global $interface;
 		global $configArray;
 		global $user;
+		global $library;
 
 		// Create our search object
 		$searchObject = SearchObjectFactory::initSearchObject();
@@ -48,14 +49,18 @@ class Advanced extends Action {
 		//as icons
 		if (array_key_exists('format_category', $facetList)){
 			$label = $facetList['format_category']['label'];
-			foreach ($facets[$label] as $key => $optionInfo){
+			foreach ($facets[$label]['values'] as $key => $optionInfo){
 				$optionInfo['imageName'] = str_replace(" ", "", strtolower($key)) . '.png';
-				$facets[$label][$key] = $optionInfo;
+				if ($key != 'Other' || !$library || $library->showOtherFormatCategory == 1){
+					$facets[$label]['values'][$key] = $optionInfo;
+				}else{
+					unset($facets[$label]['values'][$key]);
+				}
+
 			}
-			$interface->assign('formatCategoryLimit', $facets[$label]);
+			$interface->assign('formatCategoryLimit', $facets[$label]['values']);
 			unset($facets[$label]);
 		}
-
 		$interface->assign('facetList', $facets);
 
 		// Integer for % width of each column (be careful to avoid divide by zero!)
@@ -69,12 +74,7 @@ class Advanced extends Action {
 			$interface->assign('illustratedLimit',
 			$this->getIllustrationSettings($savedSearch));
 		}
-		if (stristr($specialFacets, 'publishDate')) {
-			$interface->assign('showPublicationDate', true);
-		}
-		if (stristr($specialFacets, 'lexile_score')) {
-			$interface->assign('showLexileScore', true);
-		}
+
 
 		// Send search type settings to the template
 		$interface->assign('advSearchTypes', $searchObject->getAdvancedTypes());
@@ -204,10 +204,11 @@ class Advanced extends Action {
 			natcasesort($keys);
 
 			//Add a value for not selected which will be the first item
-			$facets[$list['label']]['Any ' . $list['label']] = array('filter' => '',$selected => !$valueSelected );
+			$facets[$list['label']]['values']['Any ' . $list['label']] = array('filter' => '',$selected => !$valueSelected );
 
+			$facets[$list['label']]['facetName'] = $facet;
 			foreach($keys as $key) {
-				$facets[$list['label']][$key] = $currentList[$key];
+				$facets[$list['label']]['values'][$key] = $currentList[$key];
 			}
 		}
 		return $facets;

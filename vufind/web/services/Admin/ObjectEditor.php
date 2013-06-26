@@ -152,12 +152,18 @@ abstract class ObjectEditor extends Admin
 	function viewIndividualObject($structure){
 		global $interface;
 		//Viewing an individual record, get the id to show
-		$_SESSION['redirect_location'] = $_SERVER['HTTP_REFERER'];
+		if (isset($_SERVER['HTTP_REFERER'])){
+			$_SESSION['redirect_location'] = $_SERVER['HTTP_REFERER'];
+		}else{
+			unset($_SESSION['redirect_location']);
+		}
 		if (isset($_REQUEST['id'])){
 			$id = $_REQUEST['id'];
 			$existingObject = $this->getExistingObjectById($id);
 			$interface->assign('id', $id);
-			$interface->assign('objectName', $existingObject->label());
+			if (method_exists($existingObject, 'label')){
+				$interface->assign('objectName', $existingObject->label());
+			}
 		}
 		if (!isset($_REQUEST['id']) || $existingObject == null){
 			$objectType = $this->getObjectType();
@@ -173,6 +179,7 @@ abstract class ObjectEditor extends Admin
 			}
 		}
 		$interface->assign('contentType', $contentType);
+		$interface->assign('additionalObjectActions', $this->getAdditionalObjectActions($existingObject));
 		$interface->setTemplate('../Admin/objectEditor.tpl');
 	}
 
@@ -329,7 +336,7 @@ abstract class ObjectEditor extends Admin
 
 			if ($objectAction == 'import'){
 				global $configArray;
-				header("Location: {$configArray['Site']['url']}/Admin/{$this->getToolName()}");
+				header("Location: {$configArray['Site']['path']}/Admin/{$this->getToolName()}");
 				return true;
 			}else{
 				//Show the grid with the comparison results
@@ -368,15 +375,21 @@ abstract class ObjectEditor extends Admin
 			}
 		}
 		global $configArray;
-		$redirectLocation = $this->getRedirectLocation($objectAction, $curObject);
-		if (is_null($redirectLocation)){
-			if (isset($_SESSION['redirect_location']) && $objectAction != 'delete'){
-				header("Location: " . $_SESSION['redirect_location']);
-			}else{
-				header("Location: {$configArray['Site']['url']}/{$this->getModule()}/{$this->getToolName()}");
-			}
+		if (isset($_REQUEST['submitStay'])){
+			header("Location: {$configArray['Site']['path']}/{$this->getModule()}/{$this->getToolName()}?objectAction=edit&id=$id");
+		}elseif (isset($_REQUEST['submitAddAnother'])){
+			header("Location: {$configArray['Site']['path']}/{$this->getModule()}/{$this->getToolName()}?objectAction=addNew");
 		}else{
-			header("Location: {$redirectLocation}");
+			$redirectLocation = $this->getRedirectLocation($objectAction, $curObject);
+			if (is_null($redirectLocation)){
+				if (isset($_SESSION['redirect_location']) && $objectAction != 'delete'){
+					header("Location: " . $_SESSION['redirect_location']);
+				}else{
+					header("Location: {$configArray['Site']['path']}/{$this->getModule()}/{$this->getToolName()}");
+				}
+			}else{
+				header("Location: {$redirectLocation}");
+			}
 		}
 		die();
 	}
@@ -421,5 +434,9 @@ abstract class ObjectEditor extends Admin
 
 	function showExportAndCompare(){
 		return true;
+	}
+
+	function getAdditionalObjectActions($existingObject){
+		return array();
 	}
 }

@@ -33,14 +33,13 @@
 		{if $user->hasRole('opacAdmin')}
 			<div class="adminMenuLink {if $action == "IPAddresses"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Admin/IPAddresses">IP Addresses</a></div>
 		{/if}
-		{if $user->hasRole('opacAdmin')}
-			<div class="adminMenuLink {if $action == "ListWidgets"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Admin/ListWidgets">List Widgets</a></div>
-		{/if}
+		<div class="adminMenuLink {if $action == "ListWidgets"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Admin/ListWidgets">List Widgets</a></div>
 		{if $user->hasRole('opacAdmin')}
 			<div class="adminMenuLink {if $action == "UserSuggestions"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Admin/UserSuggestions">User Suggestions</a></div>
 			<div class="adminMenuLink {if $action == "BookStores"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Admin/BookStores">Book Stores</a></div>
 		{/if}
 		{if $ils == 'Millennium' && $user->hasRole('opacAdmin')}
+			<div class="adminMenuLink {if $action == "PTypes"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Admin/PTypes">P-Types</a></div>
 			<div class="adminMenuLink {if $action == "CirculationStatuses"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Admin/CirculationStatuses">Circulation Statuses</a></div>
 			<div class="adminMenuLink {if $action == "NonHoldableLocations"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Admin/NonHoldableLocations">Non-Holdable Locations</a></div>
 			<div class="adminMenuLink {if $action == "PTypeRestrictedLocations"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Admin/PTypeRestrictedLocations">PType Restricted Locations</a></div>
@@ -108,9 +107,11 @@
 		{assign var="curSection" value=$curSection+1}
 		<h4><a href="#">Reports</a></h4>
 		<div class="sidegroupContents">		
+			<div class="adminMenuLink{if $action == "Dashboard"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Report/Dashboard">Dashboard</a></div>
+			<div class="adminMenuLink{if $action == "Searches"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Report/Searches">Searches</a></div>
+			<div class="adminMenuLink{if $action == "PageViews"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Report/PageViews">Page Views</a></div>
 			<div class="adminMenuLink{if $action == "ReportPurchase"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Report/ReportPurchase">Purchase Tracking</a></div>
 			<div class="adminMenuLink{if $action == "ReportExternalLinks"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Report/ReportExternalLinks">External Link Tracking</a></div>
-			<div class="adminMenuLink{if $action == "ReportPageViewsLocation"}{assign var="defaultSection" value=$curSection} active{/if}"><a href="{$path}/Report/ReportPageViewsLocation">Usage By Location</a></div>
 		</div>
 	{/if}
 	

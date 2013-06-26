@@ -116,6 +116,22 @@ class Hold extends Action {
 				$profile = $this->catalog->getMyProfile($user);
 				$interface->assign('profile', $profile);
 
+				//Get information to show a warning if the user does not have sufficient holds
+				require_once 'Drivers/marmot_inc/PType.php';
+				$maxHolds = -1;
+				//Determine if we should show a warning
+				$ptype = new PType();
+				$ptype->pType = $user->patronType;
+				if ($ptype->find(true)){
+					$maxHolds = $ptype->maxHolds;
+				}
+				$currentHolds = $profile['numHolds'];
+				if ($maxHolds != -1 && ($currentHolds + 1 > $maxHolds)){
+					$interface->assign('showOverHoldLimit', true);
+					$interface->assign('maxHolds', $maxHolds);
+					$interface->assign('currentHolds', $currentHolds);
+				}
+
 				global $locationSingleton;
 				//Get the list of pickup branch locations for display in the user interface.
 				$locations = $locationSingleton->getPickupBranches($profile, $profile['homeLocationId']);
@@ -177,13 +193,14 @@ class Hold extends Action {
 
 			$_SESSION['hold_message'] = $hold_message_data;
 			if (isset($_SESSION['hold_referrer'])){
-				$logger->log('Hold Referrer is set, redirecting to there.  type = ' . $_REQUEST['type'], PEAR_LOG_INFO);
+				$logger->log('Hold Referrer is set, redirecting to there. location ' . $_SESSION['hold_referrer'], PEAR_LOG_INFO);
 
-				if ($_REQUEST['type'] != 'recall' && $_REQUEST['type'] != 'cancel' && $_REQUEST['type'] != 'update'){
+				if (($_REQUEST['type'] != 'recall' && $_REQUEST['type'] != 'cancel' && $_REQUEST['type'] != 'update')){
 					header("Location: " . $_SESSION['hold_referrer']);
 				} else{
 					//Redirect for hold cancellation or update
-					header("Location: " . $configArray['Site']['url'] . '/MyResearch/Holds');
+					$section = isset($_REQUEST['section']) ? $_REQUEST['section'] : 'unavailable';
+					header("Location: " . '/MyResearch/Holds?section=' . $section);
 				}
 				if (!isset($hold_message_data['showItemForm']) || $hold_message_data['showItemForm'] == false){
 					unset($_SESSION['hold_referrer']);
@@ -194,11 +211,11 @@ class Hold extends Action {
 				}
 			}else{
 				$logger->log('No referrer set, but there is a message to show, go to the main holds page', PEAR_LOG_INFO);
-				header("Location: " . $configArray['Site']['url'] . '/MyResearch/Holds');
+				header("Location: " . '/MyResearch/Holds');
 				die();
 			}
 		} else {
-			$logger->log('placeHold finished, do not need to show a message', PEAR_LOG_INFO);
+			//$logger->log('placeHold finished, do not need to show a message', PEAR_LOG_INFO);
 			$interface->setPageTitle('Request an Item');
 			$interface->assign('subTemplate', 'hold.tpl');
 			$interface->setTemplate('hold.tpl');

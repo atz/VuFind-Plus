@@ -6,7 +6,7 @@
 
 <div class="imageColumn"> 
 	{if $user->disableCoverArt != 1}	
-	<div id='descriptionPlaceholder{if $summShortId}{$summShortId}{else}{$summId|escape}{/if}' style='display:none'></div>
+	<div id='descriptionPlaceholder{if $summShortId}{$summShortId}{else}{$summId|escape}{/if}' style='display:none' class='descriptionTooltip'></div>
 	<a href="{$path}/Record/{$summId|escape:"url"}?searchId={$searchId}&amp;recordIndex={$recordIndex}&amp;page={$page}" id="descriptionTrigger{if $summShortId}{$summShortId}{else}{$summId|escape}{/if}">
 	<img src="{$bookCoverUrl}" class="listResultImage" alt="{translate text='Cover Image'}"/>
 	</a>
@@ -51,13 +51,16 @@
 		{if !empty($summSnippet)}<span class="quotestart">&#8220;</span>...{$summSnippet|highlight}...<span class="quoteend">&#8221;</span><br />{/if}
 	</div>
 
-	{if is_array($summFormats)}
-		{foreach from=$summFormats item=format}
-			<span class="iconlabel" >{translate text=$format}</span>&nbsp;
-		{/foreach}
-	{else}
-		<span class="iconlabel">{translate text=$summFormats}</span>
-	{/if}
+	<div class="resultItemLine4">
+		{if is_array($summFormats)}
+			{foreach from=$summFormats item=format}
+				<span class="iconlabel" >{translate text=$format}</span>&nbsp;
+			{/foreach}
+		{else}
+			<span class="iconlabel">{translate text=$summFormats}</span>
+		{/if}
+	</div>
+	
 	<div id = "holdingsSummary{if $summShortId}{$summShortId}{else}{$summId|escape}{/if}" class="holdingsSummary">
 		<div class="statusSummary" id="statusSummary{if $summShortId}{$summShortId}{else}{$summId|escape}{/if}">
 			<span class="unknown" style="font-size: 8pt;">{translate text='Loading'}...</span>
@@ -96,14 +99,12 @@
 		<script type="text/javascript">
 			$(
 				 function() {literal} { {/literal}
-						$('.rate{if $summShortId}{$summShortId|escape}{else}{$summId|escape}{/if}').rater({literal}{ {/literal}module: 'Record', recordId: '{if $summShortId}{$summShortId}{else}{$summId|escape}{/if}', rating:'0.0', postHref: '{$path}/Record/{if $summShortId}{$summShortId}{else}{$summId|escape}{/if}/AJAX?method=RateTitle'{literal} } {/literal});
+						$('.rate{if $summShortId}{$summShortId|escape}{else}{$summId|escape}{/if}').rater({literal}{ {/literal}module: 'Record', recordId: '{if $summShortId}{$summShortId}{else}{$summId|escape}{/if}', rating:'0.0', postHref: '{$path}/Record/{$summId|escape}/AJAX?method=RateTitle'{literal} } {/literal});
 				 {literal} } {/literal}
 			);
 		</script>
 	{/if}
 </div>
-
-
 
 <script type="text/javascript">
 	addRatingId('{$summId}');

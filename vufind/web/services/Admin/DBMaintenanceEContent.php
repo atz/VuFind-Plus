@@ -304,6 +304,27 @@ class DBMaintenanceEContent extends Admin {
 			),
 		),
 
+		'eContentRecord_7'	=> array(
+			'title' => 'eContent Record Update 7',
+			'description' => 'Allow null series since many overdrive titles don\'t supply one.',
+			'dependencies' => array(),
+			'sql' => array(
+				"ALTER TABLE `econtent_record` CHANGE `series` `series` VARCHAR( 255 ) NULL DEFAULT ''",
+			),
+		),
+
+		'eContentRecord_8'	=> array(
+			'title' => 'eContent Record Update 8',
+			'description' => 'Add additional indexes to econtent record.',
+			'dependencies' => array(),
+			'sql' => array(
+				"ALTER TABLE `econtent_record` ADD INDEX (`status`)",
+				"ALTER TABLE `econtent_record` ADD INDEX (`ilsId`)",
+				"ALTER TABLE `econtent_record` ADD INDEX (`externalId`)",
+			),
+		),
+
+
 		'notices_1'	=> array(
 			'title' => 'eContent Notices Update 1',
 			'description' => 'Adds notices fields so each notice is tracked explicitly',

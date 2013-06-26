@@ -57,7 +57,7 @@ class Holds extends MyResearch
 			$result = $this->catalog->driver->updateHoldDetailed($requestId, $user->password, $type, '', null, $cancelId, $locationId, $freeze);
 
 			//Redirect back here without the extra parameters.
-			$redirectUrl = $configArray['Site']['url'] . '/MyResearch/Holds?accountSort=' . ($selectedSortOption = isset($_REQUEST['accountSort']) ? $_REQUEST['accountSort'] : 'title');
+			$redirectUrl = $configArray['Site']['path'] . '/MyResearch/Holds?accountSort=' . ($selectedSortOption = isset($_REQUEST['accountSort']) ? $_REQUEST['accountSort'] : 'title');
 			if (isset($_REQUEST['section'])){
 				$redirectUrl .= "&section=" . $_REQUEST['section'];
 			}
@@ -183,6 +183,7 @@ class Holds extends MyResearch
 		$hasSeparateTemplates = $interface->template_exists('MyResearch/availableHolds.tpl');
 		if ($hasSeparateTemplates){
 			$section = isset($_REQUEST['section']) ? $_REQUEST['section'] : 'available';
+			$interface->assign('section', $section);
 			if ($section == 'available'){
 				$interface->setPageTitle('Available Holds');
 				$interface->setTemplate('availableHolds.tpl');

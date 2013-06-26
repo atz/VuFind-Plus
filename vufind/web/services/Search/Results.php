@@ -36,6 +36,7 @@ class Results extends Action {
 		global $configArray;
 		global $timer;
 		global $user;
+		global $analytics;
 
 		$searchSource = isset($_REQUEST['searchSource']) ? $_REQUEST['searchSource'] : 'local';
 
@@ -263,7 +264,11 @@ class Results extends Action {
 		// Save the URL of this search to the session so we can return to it easily:
 		$_SESSION['lastSearchURL'] = $searchObject->renderSearchUrl();
 
+		$allSearchSources = SearchSources::getSearchSources();
+		$translatedSearch = $allSearchSources[$searchSource]['name'];
+		$analytics->addSearch($translatedSearch, $searchObject->displayQuery(), $searchObject->isAdvanced(), $searchObject->getFullSearchType(), $searchObject->hasAppliedFacets(), $searchObject->getResultTotal());
 		if ($searchObject->getResultTotal() < 1) {
+
 			//Var for the IDCLREADER TEMPLATE
 			$interface->assign('ButtonBack',true);
 			$interface->assign('ButtonHome',true);
@@ -299,14 +304,14 @@ class Results extends Action {
 			$record = reset($recordSet);
 			if ($record['recordtype'] == 'list'){
 				$listId = substr($record['id'], 4);
-				header("Location: " . $interface->getUrl() . "/MyResearch/MyList/{$listId}");
+				header("Location: " . $configArray['Site']['path'] . "/MyResearch/MyList/{$listId}");
 				exit();
 			}elseif ($record['recordtype'] == 'econtentRecord'){
 				$shortId = str_replace('econtentRecord', '', $record['id']);
-				header("Location: " . $interface->getUrl() . "/EcontentRecord/$shortId/Home");
+				header("Location: " . $configArray['Site']['path'] . "/EcontentRecord/$shortId/Home");
 				exit();
 			}else{
-				header("Location: " . $interface->getUrl() . "/Record/{$record['id']}/Home");
+				header("Location: " . $configArray['Site']['path'] . "/Record/{$record['id']}/Home");
 				exit();
 			}
 
@@ -387,10 +392,11 @@ class Results extends Action {
 			$unscopedSearchUrl = $unscopedSearch->renderSearchUrl();
 			if (preg_match('/searchSource=(.*?)(?:&|$)/', $unscopedSearchUrl)){
 				$unscopedSearchUrl = preg_replace('/(.*searchSource=)(.*?)(&|$)(.*)/', '$1marmot$3$4', $unscopedSearchUrl);
+				$unscopedSearchUrl = preg_replace('/&/', '&amp;', $unscopedSearchUrl);
 			}else{
-				$unscopedSearchUrl .= "&searchSource=marmot";
+				$unscopedSearchUrl .= "&amp;searchSource=marmot";
 			}
-			$unscopedSearchUrl .= "&shard=";
+			$unscopedSearchUrl .= "&amp;shard=";
 			$interface->assign('unscopedSearchUrl', $unscopedSearchUrl);
 			if ($numUnscopedTitlesToLoad > 0){
 				$unscopedResults = $unscopedSearch->getSupplementalResultRecordHTML();

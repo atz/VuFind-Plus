@@ -82,7 +82,7 @@ div#ft_contents {
 }
 
 #main_content_with_sidebar, #main-content {
-	width: 720px;
+	width: 640px;
 	border: thin solid #B0B0B0;
 	background-color: white;
 	margin: 15px 0px 15px 0px;
@@ -105,6 +105,9 @@ div#ft_contents {
 	padding: .5em;
 }
 
+.resultitem{
+	width: 540px;
+}
 .resultLabel {
 	width: 110px;
 	color: graytext;
@@ -116,6 +119,7 @@ div#ft_contents {
 .resultValue {
 	display: inline-block;
 	vertical-align: top;
+	width: 330px;
 }
 
 .boldedResultValue {
@@ -129,6 +133,7 @@ div#ft_contents {
 
 .listResultImage {
 	float: right;
+	text-align: center;
 }
 
 .resultitem {
@@ -227,6 +232,9 @@ td {
 	border: thin solid #B0B0B0;
 	width: 170px;
 }
+.sidegroup h4{
+	width: 170px;
+}
 
 .callNumber {
 	font-weight: bold;
@@ -253,7 +261,7 @@ td {
 	vertical-align:top;
 }
 .resultsList{
-	width: 665px;
+	width: 585px;
 	display:inline-block;
 	zoom:1;
 	*display:inline;

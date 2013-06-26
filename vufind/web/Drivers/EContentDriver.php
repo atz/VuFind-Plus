@@ -46,8 +46,13 @@ class EContentDriver implements DriverInterface{
 	 *                              If an error occures, return a PEAR_Error
 	 * @access  public
 	 */
-	public function getStatus($id){
+	public function getStatus($recordId){
+		$holdings = $this->getHolding($recordId);
+		$statusSummary = $this->getStatusSummary($recordId, $holdings);
+		$statusSummary['id'] = 'econtentRecord' . $recordId;
+		$statusSummary['shortId'] = 'econtentRecord' . $recordId;
 
+		return $statusSummary;
 	}
 
 	/**
@@ -65,7 +70,13 @@ class EContentDriver implements DriverInterface{
 	 * @access  public
 	 */
 	public function getStatuses($ids){
-
+		$items = array();
+		$count = 0;
+		foreach ($ids as $id) {
+			$items[$count] = $this->getStatus($id);
+			$count++;
+		}
+		return $items;
 	}
 
 	/**
@@ -285,9 +296,17 @@ class EContentDriver implements DriverInterface{
 		$statusSummary['totalCopies'] = $totalCopies;
 		$statusSummary['onOrderCopies'] = $onOrderCopies;
 		$statusSummary['accessType'] = $eContentRecord->accessType;
+		$statusSummary['isOverDrive'] = false;
+		$statusSummary['alwaysAvailable'] = false;
 
 		if ($eContentRecord->accessType == 'external' ){
 			$statusSummary['availableCopies'] = $availableCopies;
+			if( strcasecmp($eContentRecord->source, 'OverDrive') == 0){
+				$statusSummary['isOverDrive'] = true;
+				if ($totalCopies == 1000000){
+					$statusSummary['alwaysAvailable'] = true;
+				}
+			}
 			if ($availableCopies > 0){
 				$statusSummary['status'] = "Available from {$eContentRecord->source}";
 				$statusSummary['available'] = true;
@@ -296,6 +315,7 @@ class EContentDriver implements DriverInterface{
 				$statusSummary['status'] = 'Checked Out';
 				$statusSummary['available'] = false;
 				$statusSummary['class'] = 'checkedOut';
+				$statusSummary['isOverDrive'] = true;
 			}
 		}else{
 			//Check to see if it is checked out
@@ -692,9 +712,6 @@ class EContentDriver implements DriverInterface{
 				$strandsUrl = "http://bizsolutions.strands.com/api2/event/addshoppingcart.sbs?needresult=true&apid={$configArray['Strands']['APID']}&item=econtentRecord{$id}&user={$user->id}";
 				$ret = file_get_contents($strandsUrl);
 			}
-
-			// Log the usageTracking data
-			UsageTracking::logTrackingData('numHolds');
 		}
 		return $return;
 	}
@@ -853,7 +870,7 @@ class EContentDriver implements DriverInterface{
 			$holds = new EContentHold();
 			$holds->userId = $user->id;
 			$holds->recordId = $id;
-			$holds->whereAdd("status != 'filled' AND status != 'cancelled'");
+			$holds->whereAdd("status != 'filled' AND status != 'cancelled' AND status != 'abandoned'");
 			$checkoutRecord = true;
 			if ($holds->find(true)){
 				if ($holds->status == 'available'){
@@ -899,11 +916,11 @@ class EContentDriver implements DriverInterface{
 					//Add the records to the reading history for the user
 					if ($user->trackReadingHistory == 1){
 						$this->addRecordToReadingHistory($eContentRecord, $user);
-
 					}
 
 					//If there are no more records available, reindex
-					$eContentRecord->saveToSolr();
+					//Don't force a reindex to improve speed and deal with non xml characters
+					//$eContentRecord->saveToSolr();
 				}
 			}
 		}

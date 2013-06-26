@@ -48,6 +48,7 @@
 	zoom: 1;
 	*display: inline;
 	width: 150px;
+	text-align: left;
 }
 
 .loginFormRow{
@@ -168,11 +169,11 @@
 }
 .sortDescHeader{
   background-image: url(/images/sort_desc_icon.gif);
-  background-color: #3399F;
+  background-color: #3399FF;
 }
 .sortAscHeader{
   background-image: url(/images/sort_asc_icon.gif);
-  background-color: #3399F;
+  background-color: #3399FF;
 }
 
 #notice{
@@ -213,4 +214,15 @@
 .adminMenuLink 
 .adminMenuHeader:first{
 	padding-top: 0px;
+}
+#web_note{
+	text-align: center;
+	margin: 8px;
+	padding: 8px;
+	background-color: #EDEDED;
+	border: 1px solid #949494;
+	border-radius: 4px;
+	font-weight: bold;
+	font-family: sans-serif;
+	color: darkblue;
 }

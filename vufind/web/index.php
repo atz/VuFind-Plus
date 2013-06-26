@@ -116,20 +116,9 @@ $timer->logTime("Include ConnectionManager");
 require_once 'Drivers/marmot_inc/Library.php';
 require_once 'Drivers/marmot_inc/Location.php';
 $timer->logTime("Include Library and Location");
-require_once 'sys/UsageTracking.php';
-$timer->logTime("Include Usage Tracking");
 
 $timer->logTime('Startup');
-// Set up autoloader (needed for YAML)
-function vufind_autoloader($class) {
-	if (file_exists('sys/' . $class . '.php')){
-		require_once 'sys/' . $class . '.php';
-	}elseif (file_exists('services/MyResearch/lib/' . $class . '.php')){
-		require_once 'services/MyResearch/lib/' . $class . '.php';
-	}else{
-		require_once str_replace('_', '/', $class) . '.php';
-	}
-}
+
 spl_autoload_register('vufind_autoloader');
 
 // Sets global error handler for PEAR errors
@@ -166,6 +155,14 @@ $timer->logTime('Created library');
 global $locationSingleton;
 $locationSingleton = new Location();
 $timer->logTime('Created Location');
+
+if (isset($_REQUEST['test_role'])){
+	if ($_REQUEST['test_role'] == ''){
+		setcookie('test_role', $_REQUEST['test_role'], time() - 1000, '/');
+	}else{
+		setcookie('test_role', $_REQUEST['test_role'], 0, '/');
+	}
+}
 
 $active_ip = $locationSingleton->getActiveIp();
 if (!isset($_COOKIE['test_ip']) || $active_ip != $_COOKIE['test_ip']){
@@ -215,9 +212,20 @@ $interface->assign('footerTemplate', 'footer.tpl');
 if (isset($location) && $location->footerTemplate != 'default'){
 	$interface->assign('footerTemplate', $location->footerTemplate);
 }
+getGitBranch();
+
+require_once 'sys/Analytics.php';
+//Define tracking to be done
+global $analytics;
+$analytics = new Analytics($active_ip, $startTime);
+
+$googleAnalyticsId = isset($configArray['Analytics']['googleAnalyticsId']) ? $configArray['Analytics']['googleAnalyticsId'] : false;
+$interface->assign('googleAnalyticsId', $googleAnalyticsId);
 
 //Set System Message
-//$interface->assign('systemMessage', "The catalog will be undergoing maintenance on Sunday July 29th from 8am - noon.  The system may be unavailable during this period.");
+if ($configArray['System']['systemMessage']){
+	$interface->assign('systemMessage', $configArray['System']['systemMessage']);
+}
 
 //Get the name of the active instance
 if ($locationSingleton->getActiveLocation() != null){
@@ -229,11 +237,12 @@ if ($locationSingleton->getActiveLocation() != null){
 }
 if ($locationSingleton->getIPLocation() != null){
 	$interface->assign('inLibrary', true);
-	$interface->assign('physicalLocation', $locationSingleton->getIPLocation()->displayName);
+	$physicalLocation = $locationSingleton->getIPLocation()->displayName;
 }else{
 	$interface->assign('inLibrary', false);
-	$interface->assign('physicalLocation', 'Home');
+	$physicalLocation = 'Home';
 }
+$interface->assign('physicalLocation', $physicalLocation);
 
 $productionServer = $configArray['Site']['isProduction'];
 $interface->assign('productionServer', $productionServer);
@@ -272,6 +281,18 @@ if (isset($library)){
 	$interface->assign('enableBookCart', 1);
 }
 $timer->logTime('Interface checks for library and location');
+
+if ($library){
+	$searchLibrary = $library->getSearchLibrary();
+	if ($searchLibrary){
+		$interface->assign('millenniumScope', $searchLibrary->scope);
+	}else{
+		$interface->assign('millenniumScope', '93');
+	}
+}else{
+	$interface->assign('millenniumScope', '93');
+}
+
 
 //Set that the interface is a single column by default
 $interface->assign('page_body_style', 'one_column');
@@ -366,6 +387,7 @@ $interface->setLanguage($language);
 // Determine Module and Action
 global $user;
 $user = UserAccount::isLoggedIn();
+
 $timer->logTime('Check if user is logged in');
 $module = (isset($_GET['module'])) ? $_GET['module'] : null;
 $module = preg_replace('/[^\w]/', '', $module);
@@ -374,6 +396,25 @@ $action = preg_replace('/[^\w]/', '', $action);
 //Set these initially in case user login fails, we will need the module to be set.
 $interface->assign('module', $module);
 $interface->assign('action', $action);
+
+if ($analytics){
+	$analytics->setModule($module);
+	$analytics->setAction($action);
+	$analytics->setObjectId(isset($_REQUEST['id']) ? $_REQUEST['id'] : null);
+	$analytics->setMethod(isset($_REQUEST['method']) ? $_REQUEST['method'] : null);
+	$analytics->setLanguage($interface->getLanguage());
+	$analytics->setTheme($interface->getPrimaryTheme());
+	$analytics->setMobile($interface->isMobile() ? 1 : 0);
+	$analytics->setDevice(get_device_name());
+	$analytics->setPhysicalLocation($physicalLocation);
+	if ($user){
+		$analytics->setPatronType($user->patronType);
+		$analytics->setHomeLocationId($user->homeLocationId);
+	}else{
+		$analytics->setPatronType('logged out');
+		$analytics->setHomeLocationId(-1);
+	}
+}
 
 //Determine whether or not materials request functionality should be enabled
 require_once 'sys/MaterialsRequest.php';
@@ -406,7 +447,7 @@ if ($user) {
 	if ($user){
 		if (isset($_REQUEST['followupModule']) && isset($_REQUEST['followupAction'])) {
 			echo("Redirecting to followup location");
-			$followupUrl =  $configArray['Site']['url'] . "/".  strip_tags($_REQUEST['followupModule']);
+			$followupUrl =  $configArray['Site']['path'] . "/".  strip_tags($_REQUEST['followupModule']);
 			if (!empty($_REQUEST['recordId'])) {
 				$followupUrl .= "/" .  strip_tags($_REQUEST['recordId']);
 			}
@@ -433,6 +474,15 @@ if ($user) {
 	}
 }
 $timer->logTime('User authentication');
+
+if ($user){
+	$interface->assign('pType', $user->patronType);
+	$homeLibrary = Library::getLibraryForLocation($user->homeLocationId);
+	$interface->assign('homeLibrary', $homeLibrary->displayName);
+}else{
+	$interface->assign('pType', 'logged out');
+	$interface->assign('homeLibrary', 'n/a');
+}
 
 //Find a resonable default location to go to
 if ($module == null && $action == null){
@@ -556,7 +606,12 @@ if ($action == "AJAX" || $action == "JSON"){
 		if (isset($library) && $library != false && $library->useHomeLinkInBreadcrumbs){
 			$interface->assign('homeBreadcrumbLink', $library->homeLink);
 		}else{
-			$interface->assign('homeBreadcrumbLink', $interface->getUrl());
+			$interface->assign('homeBreadcrumbLink', '/');
+		}
+		if (isset($library) && $library != false){
+			$interface->assign('homeLinkText', $library->homeLinkText);
+		}else{
+			$interface->assign('homeLinkText', 'Home');
 		}
 	}
 	//Load user list for book bag
@@ -577,7 +632,7 @@ if ($action == "AJAX" || $action == "JSON"){
 $ipLocation = $locationSingleton->getIPLocation();
 $ipId = $locationSingleton->getIPid();
 
-if (!is_null($ipLocation) && $ipLocation != false && $user){
+if (!is_null($ipLocation) && $ipLocation != false){
 	$interface->assign('onInternalIP', true);
 	if (isset($user->bypassAutoLogout) && $user->bypassAutoLogout == 1){
 		$interface->assign('includeAutoLogoutCode', false);
@@ -585,7 +640,7 @@ if (!is_null($ipLocation) && $ipLocation != false && $user){
 		$includeAutoLogoutCode = true;
 		//Get the PType for the user
 		$catalog = new CatalogConnection($configArray['Catalog']['driver']);
-		if ($catalog->checkFunction('isUserStaff')){
+		if ($user && $catalog->checkFunction('isUserStaff')){
 			$userIsStaff = $catalog->isUserStaff();
 			$interface->assign('userIsStaff', $userIsStaff);
 			if ($userIsStaff){
@@ -595,21 +650,19 @@ if (!is_null($ipLocation) && $ipLocation != false && $user){
 				}
 			}
 		}
-
+		//Only include auto logout code if we are not on the home page
+		if (!$user && $module == 'Search' && $action == 'Home'){
+			$includeAutoLogoutCode = false;
+		}
 		$interface->assign('includeAutoLogoutCode', $includeAutoLogoutCode);
 	}
+	$automaticTimeoutLength = $ipLocation->automaticTimeoutLength;
+	$interface->assign('automaticTimeoutLength', $automaticTimeoutLength);
 }else{
 	$interface->assign('onInternalIP', false);
 	$interface->assign('includeAutoLogoutCode', false);
 }
 $timer->logTime('Check whether or not to include auto logout code');
-
-if (!in_array($action, array("AJAX", "JSON")) && !in_array($module, array("API", "Admin", "Report")) ){
-	// Log the usageTracking data
-	$usageTracking = new UsageTracking();
-	$usageTracking->logTrackingData('numPageViews', 1, $ipLocation, $ipId);
-	$timer->logTime('Log Usage Tracking');
-}
 
 // Process Login Followup
 if (isset($_REQUEST['followup'])) {
@@ -645,27 +698,28 @@ if (is_readable("services/$module/$action.php")) {
 }
 $timer->logTime('Finished Index');
 $timer->writeTimings();
+//$analytics->finish();
 
 function processFollowup(){
 	global $configArray;
 
 	switch($_REQUEST['followup']) {
 		case 'SaveRecord':
-			$result = file_get_contents($configArray['Site']['url'] .
+			$result = file_get_contents($configArray['Site']['path'] .
                     "/Record/AJAX?method=SaveRecord&id=" . urlencode($_REQUEST['id']));
 			break;
 		case 'SaveTag':
-			$result = file_get_contents($configArray['Site']['url'] .
+			$result = file_get_contents($configArray['Site']['path'] .
                     "/Record/AJAX?method=SaveTag&id=" . urlencode($_REQUEST['id']) .
                     "&tag=" . urlencode($_REQUEST['tag']));
 			break;
 		case 'SaveComment':
-			$result = file_get_contents($configArray['Site']['url'] .
+			$result = file_get_contents($configArray['Site']['path'] .
                     "/Record/AJAX?method=SaveComment&id=" . urlencode($_REQUEST['id']) .
                     "&comment=" . urlencode($_REQUEST['comment']));
 			break;
 		case 'SaveSearch':
-			header("Location: {$configArray['Site']['url']}/".$_REQUEST['followupModule']."/".$_REQUEST['followupAction']."?".$_REQUEST['recordId']);
+			header("Location: {$configArray['Site']['path']}/".$_REQUEST['followupModule']."/".$_REQUEST['followupAction']."?".$_REQUEST['recordId']);
 			die();
 			break;
 	}
@@ -872,6 +926,7 @@ function updateConfigForScoping($configArray) {
 	global $servername;
 
 	//split the servername based on
+	global $subdomain;
 	$subdomain = null;
 	if(strpos($_SERVER['SERVER_NAME'], '.')){
 		$serverComponents = explode('.', $_SERVER['SERVER_NAME']);
@@ -946,7 +1001,7 @@ function updateConfigForScoping($configArray) {
 		$themes = explode(',', $library->themeName);
 		foreach ($themes as $themeName){
 			if ($location != null && file_exists('./interface/themes/' . $themeName . '/css/'. $location->code .'_extra_styles.css')) {
-				$configArray['Site']['theme_css'] = $configArray['Site']['url'] . '/interface/themes/' . $themeName . '/css/'. $location->code .'_extra_styles.css';
+				$configArray['Site']['theme_css'] = $configArray['Site']['path'] . '/interface/themes/' . $themeName . '/css/'. $location->code .'_extra_styles.css';
 			}
 			if ($location != null && file_exists('./interface/themes/' . $themeName . '/images/'. $location->code .'_logo_small.png')) {
 				$configArray['Site']['smallLogo'] = '/interface/themes/' . $themeName . '/images/'. $location->code .'_logo_small.png';
@@ -990,4 +1045,27 @@ function formatRenewMessage($renew_message_data){
 	$logger->log("Renew Message $renew_message", PEAR_LOG_INFO);
 
 	return $renew_message;
+}
+function getGitBranch(){
+	global $interface;
+	$stringfromfile = file('../../.git/HEAD', FILE_USE_INCLUDE_PATH);
+	$stringfromfile = $stringfromfile[0]; //get the string from the array
+	$explodedstring = explode("/", $stringfromfile); //seperate out by the "/" in the string
+	$branchname = $explodedstring[2]; //get the one that is always the branch name
+
+	$interface->assign('gitBranch', $branchname);
+}
+// Set up autoloader (needed for YAML)
+function vufind_autoloader($class) {
+	if (strpos($class, '.php') > 0){
+		$class = substr($class, 0, strpos($class, '.php'));
+	}
+	$nameSpaceClass = str_replace('_', '/', $class) . '.php';
+	if (file_exists('sys/' . $class . '.php')){
+		require_once 'sys/' . $class . '.php';
+	}elseif (file_exists('services/MyResearch/lib/' . $class . '.php')){
+		require_once 'services/MyResearch/lib/' . $class . '.php';
+	}else{
+		require_once $nameSpaceClass;
+	}
 }

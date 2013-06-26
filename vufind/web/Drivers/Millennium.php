@@ -540,26 +540,32 @@ class MillenniumDriver implements DriverInterface
 			if (strlen($physicalBranch) > 0 && stripos($holding['location'], $physicalBranch) !== false){
 				//If the user is in a branch, those holdings come first.
 				$holding['section'] = 'In this library';
+				$holding['sectionId'] = 1;
 				$sorted_array['1' . $sortString] = $holding;
 			} else if (strlen($homeBranch) > 0 && stripos($holding['location'], $homeBranch) !== false){
 				//Next come the user's home branch if the user is logged in or has the home_branch cookie set.
 				$holding['section'] = 'Your library';
+				$holding['sectionId'] = 2;
 				$sorted_array['2' . $sortString] = $holding;
 			} else if ((strlen($nearbyBranch1) > 0 && stripos($holding['location'], $nearbyBranch1) !== false)){
 				//Next come nearby locations for the user
 				$holding['section'] = 'Nearby Libraries';
+				$holding['sectionId'] = 3;
 				$sorted_array['3' . $sortString] = $holding;
 			} else if ((strlen($nearbyBranch2) > 0 && stripos($holding['location'], $nearbyBranch2) !== false)){
 				//Next come nearby locations for the user
 				$holding['section'] = 'Nearby Libraries';
+				$holding['sectionId'] = 4;
 				$sorted_array['4' . $sortString] = $holding;
 			} else if (strlen($libraryLocationLabels) > 0 && preg_match($libraryLocationLabels, $holding['location'])){
 				//Next come any locations within the same system we are in.
 				$holding['section'] = $library->displayName;
+				$holding['sectionId'] = 5;
 				$sorted_array['5' . $sortString] = $holding;
 			} else {
 				//Finally, all other holdings are shown sorted alphabetically.
 				$holding['section'] = 'Other Locations';
+				$holding['sectionId'] = 6;
 				$sorted_array['6' . $sortString] = $holding;
 			}
 			$i++;
@@ -576,6 +582,7 @@ class MillenniumDriver implements DriverInterface
 				$sorted_array['7' . $location . $i] = array(
                     'location' => $location,
                     'section' => 'On Order',
+                    'sectionId' => 7,
                     'holdable' => 1,
 				);
 			}
@@ -1124,7 +1131,9 @@ class MillenniumDriver implements DriverInterface
 
                 'email' => isset($patronDump['EMAIL_ADDR']) ? $patronDump['EMAIL_ADDR'] : '',
                 'major' => null,
-                'college' => null);
+                'college' => null,
+								'patronType' => $patronDump['P_TYPE'],
+								'web_note' => isset($patronDump['WEB_NOTE']) ? $patronDump['WEB_NOTE'] : '');
 			$timer->logTime("patron logged in successfully");
 			return $user;
 
@@ -1295,6 +1304,7 @@ class MillenniumDriver implements DriverInterface
 				'bypassAutoLogout' => ($user) ? $user->bypassAutoLogout : 0,
 				'ptype' => $patronDump['P_TYPE'],
 				'notices' => $patronDump['NOTICE_PREF'],
+				'web_note' => isset($patronDump['WEB_NOTE']) ? $patronDump['WEB_NOTE'] : '',
 		);
 
 		//Get eContent info as well
@@ -1688,10 +1698,13 @@ class MillenniumDriver implements DriverInterface
 							$shortId = $matches[1];
 							$bibid = '.' . $matches[1];
 							$title = $matches[2];
+
+							$historyEntry['id'] = $bibid;
+							$historyEntry['shortId'] = $shortId;
+						}else{
+							$title = strip_tags($scols[$i]);
 						}
 
-						$historyEntry['id'] = $bibid;
-						$historyEntry['shortId'] = $shortId;
 						$historyEntry['title'] = $title;
 					}
 
@@ -1776,6 +1789,7 @@ class MillenniumDriver implements DriverInterface
 	 */
 	function doReadingHistoryAction($patron, $action, $selectedTitles){
 		global $configArray;
+		global $analytics;
 		$id2= $patron['id'];
 		$patronDump = $this->_getPatronDump($this->_getBarcode());
 		//Load the reading history page
@@ -1818,12 +1832,18 @@ class MillenniumDriver implements DriverInterface
 			curl_setopt($curl_connection, CURLOPT_URL, $curl_url);
 			curl_setopt($curl_connection, CURLOPT_HTTPGET, true);
 			$sresult = curl_exec($curl_connection);
+			if ($analytics){
+				$analytics->addEvent('ILS Integration', 'Delete Marked Reading History Titles');
+			}
 		}elseif ($action == 'deleteAll'){
 			//load patron page readinghistory/rah
 			$curl_url = $configArray['Catalog']['url'] . "/patroninfo~S{$scope}/" . $patronDump['RECORD_#'] ."/readinghistory/rah";
 			curl_setopt($curl_connection, CURLOPT_URL, $curl_url);
 			curl_setopt($curl_connection, CURLOPT_HTTPGET, true);
 			$sresult = curl_exec($curl_connection);
+			if ($analytics){
+				$analytics->addEvent('ILS Integration', 'Delete All Reading History Titles');
+			}
 		}elseif ($action == 'exportList'){
 			//Leave this unimplemented for now.
 		}elseif ($action == 'optOut'){
@@ -1832,12 +1852,18 @@ class MillenniumDriver implements DriverInterface
 			curl_setopt($curl_connection, CURLOPT_URL, $curl_url);
 			curl_setopt($curl_connection, CURLOPT_HTTPGET, true);
 			$sresult = curl_exec($curl_connection);
+			if ($analytics){
+				$analytics->addEvent('ILS Integration', 'Opt Out of Reading History');
+			}
 		}elseif ($action == 'optIn'){
 			//load patron page readinghistory/OptIn
 			$curl_url = $configArray['Catalog']['url'] . "/patroninfo~S{$scope}/" . $patronDump['RECORD_#'] ."/readinghistory/OptIn";
 			curl_setopt($curl_connection, CURLOPT_URL, $curl_url);
 			curl_setopt($curl_connection, CURLOPT_HTTPGET, true);
 			$sresult = curl_exec($curl_connection);
+			if ($analytics){
+				$analytics->addEvent('ILS Integration', 'Opt in to Reading History');
+			}
 		}
 		curl_close($curl_connection);
 		unlink($cookieJar);
@@ -2243,6 +2269,14 @@ class MillenniumDriver implements DriverInterface
 				$campus = $user->homeLocationId;
 			}
 
+			if (is_numeric($campus)){
+				$location = new Location();
+				$location->locationId = $campus;
+				if ($location->find(true)){
+					$campus = $location->code;
+				}
+			}
+
 			list($Month, $Day, $Year)=explode("/", $date);
 
 			//------------BEGIN CURL-----------------------------------------------------------------
@@ -2338,8 +2372,13 @@ class MillenniumDriver implements DriverInterface
 			$hold_result = $this->_getHoldResult($sresult);
 			$hold_result['title']  = $title;
 			$hold_result['bid'] = $bib1;
-			if ($hold_result['result'] == true){
-				UsageTracking::logTrackingData('numHolds');
+			global $analytics;
+			if ($analytics){
+				if ($hold_result['result'] == true){
+					$analytics->addEvent('ILS Integration', 'Successful Hold', $title);
+				}else{
+					$analytics->addEvent('ILS Integration', 'Failed Hold', $hold_result['message'] . ' - ' . $title);
+				}
 			}
 			return $hold_result;
 		}
@@ -2463,6 +2502,8 @@ class MillenniumDriver implements DriverInterface
 		$cancelValue = ($type == 'cancel' || $type == 'recall') ? 'on' : 'off';
 
 		if (is_array($xnum)){
+			$loadTitles = (!isset($title) || strlen($title) == 0);
+			$logger->log("Load titles = $loadTitles", PEAR_LOG_DEBUG);
 			$extraGetInfo = array(
                 'updateholdssome' => 'YES',
                 'currentsortorder' => 'current_pickup',
@@ -2476,8 +2517,25 @@ class MillenniumDriver implements DriverInterface
 				if (strlen($freezeValue) > 0){
 					$extraGetInfo['freeze' . $tmpBib] = $freezeValue;
 				}
+				if ($loadTitles){
+					$resource = new Resource();
+					$resource->shortId = $tmpBib;
+					if ($resource->find(true)){
+						if (strlen($title) > 0) $title .= ", ";
+						$title .= $resource->title;
+					}else{
+						$logger->log("Did not find bib for = $tmpBib", PEAR_LOG_DEBUG);
+					}
+				}
 			}
 		}else{
+			if (!isset($title) || $title == ''){
+				$resource = new Resource();
+				$resource->shortId = $bib;
+				if ($resource->find(true)){
+					$title = $resource->title;
+				}
+			}
 			$extraGetInfo = array(
                 'updateholdssome' => 'YES',
                 'cancel' . $bib . $xnum => $cancelValue,
@@ -2576,19 +2634,23 @@ class MillenniumDriver implements DriverInterface
 		//Clear holds for the patron
 		unset($this->holds[$patronId]);
 
+		global $analytics;
 		if ($type == 'cancel' || $type == 'recall'){
 			if ($success){
+				$analytics->addEvent('ILS Integration', 'Hold Cancelled', $title);
 				return array(
                     'title' => $title,
                     'result' => true,
                     'message' => 'Your hold was cancelled successfully.');
 			}else{
+				$analytics->addEvent('ILS Integration', 'Hold Not Cancelled', $title);
 				return array(
                     'title' => $title,
                     'result' => false,
                     'message' => 'Your hold could not be cancelled.  Please try again later or see your librarian.');
 			}
 		}else{
+			$analytics->addEvent('ILS Integration', 'Hold(s) Updated', $title);
 			return array(
                     'title' => $title,
                     'result' => true,
@@ -2675,7 +2737,6 @@ class MillenniumDriver implements DriverInterface
 			$hold_result['result'] = true;
 			$hold_result['message'] = "All items were renewed successfully.";
 		}
-		UsageTracking::logTrackingData($hold_result['Renewed']);
 
 		return $hold_result;
 	}
@@ -2746,17 +2807,13 @@ class MillenniumDriver implements DriverInterface
 			$message = 'Unable to renew this item, ' . strtolower($matches[1]) . '.';
 		}else if (preg_match('/Your record is in use/si', $sresult, $matches)) {
 			$success = false;
-			$message = 'Unable to renew this item, your record is in use by the system.';
+			$message = 'Unable to renew this item now, your account is in use by the system.  Please try again later.';
 		}else{
 			$success = true;
 			$message = 'Your item was successfully renewed';
 		}
 		curl_close($curl_connection);
 		unlink($cookieJar);
-
-		if ($success){
-			UsageTracking::logTrackingData('numRenewals');
-		}
 
 		return array(
                     'itemId' => $itemId,

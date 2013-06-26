@@ -38,11 +38,11 @@ class Home extends Record{
 		$timer->logTime('Loaded Comments');
 		Cite::loadCitation();
 		$timer->logTime('Loaded Citations');
-		
+
 		if (isset($_REQUEST['id'])){
 			$recordId = $_REQUEST['id'];
 		}
-		
+
 		if (isset($_REQUEST['strandsReqId']) && isset($configArray['Strands']['APID'])){
 			$url = "http://bizsolutions.strands.com/api2/event/clickedrecommendation.sbs?apid={$configArray['Strands']['APID']}&item={$recordId}&user={$user->id}&rrq={$_REQUEST['strandsReqId']}&tpl={$_REQUEST['strandsTpl']}";
 			$response = file_get_contents($url);

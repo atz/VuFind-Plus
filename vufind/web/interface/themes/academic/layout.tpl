@@ -8,9 +8,10 @@
 		<link type="image/x-icon" href="{img filename=favicon.png}" rel="shortcut icon" />
 		<link rel="search" type="application/opensearchdescription+xml" title="Library Catalog Search" href="{$path}/Search/OpenSearch?method=describe" />
 		<script type="text/javascript">
-		path = '{$path}';
-		url = '{$url}';
-		loggedIn = {if $user}true{else}false{/if};
+			path = '{$path}';
+			url = '{$url}';
+			loggedIn = {if $user}true{else}false{/if};
+			automaticTimeoutLength = {if $automaticTimeoutLength}{$automaticTimeoutLength}{else}90{/if};
 		</script>
 
 		{css filename="consolidated.min.css"}
@@ -59,7 +60,7 @@
 				{if $showBreadcrumbs}
 				<div class="breadcrumbs">
 					<div class="breadcrumbinner">
-						<a href="{$homeBreadcrumbLink}">{translate text="Home"}</a> <span>&gt;</span>
+						<a href="{$homeBreadcrumbLink}">{translate text=$homeLinkText}</a> <span>&gt;</span>
 						{include file="$module/breadcrumbs.tpl"}
 					</div>
 				</div>
@@ -107,5 +108,6 @@
 			</div> {* End ft *}
 
 		</div> {* End outer_span *}
+		{include file=tracking.tpl}
 	</body>
 </html>{/strip}

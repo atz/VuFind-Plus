@@ -34,6 +34,7 @@ class Home extends Action
 		global $configArray;
 		global $interface;
 		global $user;
+		global $library;
 
 		// Initialise from the current search globals
 		$searchObject = SearchObjectFactory::initSearchObject();
@@ -119,8 +120,10 @@ class Home extends Action
 			// Pull External Author Content
 			if ($searchObject->getPage() == 1) {
 				// Only load Wikipedia info if turned on in config file:
-				if (isset($configArray['Content']['authors']) &&
-				stristr($configArray['Content']['authors'], 'wikipedia')) {
+				if (isset($configArray['Content']['authors'])
+						&& stristr($configArray['Content']['authors'], 'wikipedia')
+						&& (!$library || $library->showWikipediaContent == 1)
+						) {
 					// Only use first two characters of language string; Wikipedia
 					// uses language domains but doesn't break them up into regional
 					// variations like pt-br or en-gb.
@@ -470,9 +473,9 @@ class Home extends Action
 
 		// Convert wikipedia links
 		$pattern[] = '/(\x5b\x5b)([^\x5d|]*)(\x5d\x5d)/Us';
-		$replacement[] = '<a href="' . $configArray['Site']['url'] . '/Search/Results?lookfor=%22$2%22&amp;type=Keyword">$2</a>';
+		$replacement[] = '<a href="' . $configArray['Site']['path'] . '/Search/Results?lookfor=%22$2%22&amp;type=Keyword">$2</a>';
 		$pattern[] = '/(\x5b\x5b)([^\x5d]*)\x7c([^\x5d]*)(\x5d\x5d)/Us';
-		$replacement[] = '<a href="' . $configArray['Site']['url'] . '/Search/Results?lookfor=%22$2%22&amp;type=Keyword">$3</a>';
+		$replacement[] = '<a href="' . $configArray['Site']['path'] . '/Search/Results?lookfor=%22$2%22&amp;type=Keyword">$3</a>';
 
 		// Fix pronunciation guides
 		$pattern[] = '/({{)pron-en\|([^}]*)(}})/Us';

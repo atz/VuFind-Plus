@@ -23,8 +23,12 @@ $(document).ready(function(){
 	$('a.mobile-view').each(function() {
 		$(this).attr('href', url);
 	});
+	collapseFieldsets();
 	
-	// Implement collapsible fieldsets.
+});
+
+function collapseFieldsets(){
+	//Implement collapsible fieldsets.
 	var collapsibles = $('fieldset.fieldset-collapsible');
 	if (collapsibles.length > 0) {
 		collapsibles.each(function() {
@@ -43,7 +47,7 @@ $(document).ready(function(){
 			collapsible.addClass('fieldset-collapsed');
 		});
 	}
-});
+}
 
 function getLightbox(module, action, id, lookfor, message, followupModule,
 		followupAction, followupId, left, width, top, height) {
@@ -643,7 +647,7 @@ try{
 						my: "left top",
 						at: "left bottom",
 						of: "#lookfor",
-						collision: "fit"
+						collision: "none"
 					},
 					minLength: 4,
 					delay: 600
@@ -689,15 +693,8 @@ $(divId).tooltip({
 		  var rawData = $.ajax(loadDescription,{
 			  async: false
 		  }).responseText;
-		  var xmlDoc = $.parseXML(rawData);
-		  var data = $(xmlDoc);
-		  //parses the xml and sets variables to call later
-		  var descriptAjax = data.find('description').text();
-		  var lengthAjax = data.find('length').text();
-		  var publishAjax =data.find('publisher').text();
-		  var toolTip = "<h3>Description</h3> <div class='description-element'>" + descriptAjax + "</div><div class='description-element'><div class='description-element-label'>Length: </div>" + lengthAjax + "</div><div class='description-element'><div class='description-element-label'>Publisher: </div>" + publishAjax + "</div>";
-		  $("#descriptionPlaceholder" + shortid).html(toolTip);
-		  return toolTip;
+		  $("#descriptionPlaceholder" + shortid).html(rawData);
+		  return rawData;
 		}
 	  }
 });
@@ -1012,4 +1009,35 @@ function getQuerystringParameters(){
 		}
 	}
 	return vars;
+}
+
+function createWidgetFromList(listId){
+	//prompt for the widget to add to 
+	ajaxLightbox(path + '/Admin/AJAX?method=getAddToWidgetForm&source=list&id=' + listId);
+	return false;
+}
+function createWidgetFromSearch(searchId){
+	//prompt for the widget to add to
+	ajaxLightbox(path + '/Admin/AJAX?method=getAddToWidgetForm&source=search&id=' + searchId);
+	return false;
+}
+function trackEvent(category, action, data){
+	var url =path + '/AJAX/JSON?method=trackEvent&category=' + encodeURIComponent(category) + '&eventAction=' + encodeURIComponent(action) + '&data=' + encodeURIComponent(data);
+	$.ajax({
+		url: url,
+		async: true
+	});
+	return true;
+}
+
+function changeDropDownFacet(dropDownId, facetLabel){
+	var selectedOption = $("#" + dropDownId + " :selected");
+	var destination = selectedOption.data("destination");
+	var value = selectedOption.data("label");
+	window.location.href = destination;
+}
+
+function toggleSection(sectionName){
+	$("." + sectionName).toggle();
+	$("#holdings-section-" + sectionName).toggleClass('collapsed expanded');
 }

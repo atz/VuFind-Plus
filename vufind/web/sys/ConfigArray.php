@@ -125,7 +125,7 @@ function readConfig()
 	//Read default configuration file
 	$configFile = '../../sites/default/conf/config.ini';
 	$mainArray = parse_ini_file($configFile, true);
-	
+
 	global $servername;
 	$serverUrl = $_SERVER['SERVER_NAME'];
 	$server = $serverUrl;
@@ -141,23 +141,28 @@ function readConfig()
 		}
 		array_shift($serverParts);
 	}
-	
+
 	if ($servername == 'default'){
 		global $logger;
-		$logger->log('Did not find servername for server ' . $_SERVER['SERVER_NAME'], PEAR_LOG_ERR);
+		if ($logger){
+			$logger->log('Did not find servername for server ' . $_SERVER['SERVER_NAME'], PEAR_LOG_ERR);
+		}
 		PEAR::raiseError("Invalid configuration, could not find site for " . $_SERVER['SERVER_NAME']);
 	}
-	
+
 	if ($mainArray == false){
 		echo("Unable to parse configuration file $configFile, please check syntax");
 	}
 	//If we are accessing the site via a subdomain, need to preserve the subdomain
-	if (isset($_SERVER['HTTPS'])){
+	//Don't try to preserve SSL since the combination of proxy and SSL does not work nicely.
+	//i.e. https://mesa.marmot.org is proxied to https://mesa.opac.marmot.org which does not have
+	//a valid SSL cert
+	if (false && isset($_SERVER['HTTPS'])){
 		$mainArray['Site']['url'] = "https://" . $serverUrl;
 	}else{
 		$mainArray['Site']['url'] = "http://" . $serverUrl;
 	}
-	
+
 	if (isset($mainArray['Extra_Config']) &&
 	isset($mainArray['Extra_Config']['local_overrides'])) {
 		if (file_exists("../../sites/$servername/conf/" . $mainArray['Extra_Config']['local_overrides'])){

@@ -1,6 +1,6 @@
 <?php
 class SearchSources{
-	function getSearchSources(){
+	static function getSearchSources(){
 		$searchOptions = array();
 		//Check to see if marmot catalog is a valid option
 		global $library;
@@ -9,7 +9,7 @@ class SearchSources{
 		$repeatInWorldCat = false;
 		$repeatInProspector = true;
 		$repeatInAmazon = true;
-		$repeatInOverdrive = true;
+		$repeatInOverdrive = false;
 		$systemsToRepeatIn = array();
 		$searchGenealogy = true;
 		$repeatCourseReserves = false;

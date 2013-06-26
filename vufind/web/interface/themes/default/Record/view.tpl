@@ -226,7 +226,7 @@ function redrawSaveStatus() {literal}{{/literal}
 		{/if}
 		
 		{if $classicId}
-			<div id = "classicViewLink"><a href ="{$classicUrl}/record={$classicId|escape:"url"}" rel="external" onclick="window.open (this.href, 'child'); return false">Classic View</a></div>
+			<div id = "classicViewLink"><a href ="{$classicUrl}/record={$classicId|escape:"url"}&amp;searchscope={$millenniumScope}" rel="external" onclick="trackEvent('Outgoing Link', 'Classic', '{$classicId}');window.open (this.href, 'child'); return false">Classic View</a></div>
 		{/if}
 	</div> {* End sidebar *}
 	
@@ -298,8 +298,7 @@ function redrawSaveStatus() {literal}{{/literal}
 			</div>
 			{/if}
 					
-			
-			{if $showRating}
+			{if $showRatings == 1}
 				<div id="myrating" class="stat">
 					<div class="statVal">
 						<div class="ui-rater">
@@ -528,6 +527,8 @@ function redrawSaveStatus() {literal}{{/literal}
 				{if $showAmazonReviews || $showStandardReviews || $showComments}
 					{foreach from=$editorialReviews key=key item=reviewTabInfo}
 						<li><a href="#{$key}">{translate text=$reviewTabInfo.tabName}</a></li>
+					{foreachelse}
+						<li><a href="#reviewtab">{translate text="Reviews"}</a></li>
 					{/foreach}
 				{/if}
 				{if $showComments}
@@ -616,8 +617,26 @@ function redrawSaveStatus() {literal}{{/literal}
 						{assign var=review value=$review}
 						{include file="Resource/view-review.tpl"}
 					{/foreach}
+					
+					{if $user && ($user->hasRole('opacAdmin') || $user->hasRole('libraryAdmin'))}
+						<div>
+							<span class="button"><a href='{$path}/EditorialReview/Edit?recordId={$id}'>Add Editorial Review</a></span>
+						</div>
+					{/if}
 				{/if}
 			</div>
+			{foreachelse}
+				<div id="reviewtab">
+					{if $showComments}
+					<div id = "staffReviewtab" >
+					{include file="$module/view-staff-reviews.tpl"}
+					</div>
+					{/if}
+						
+					{if $showAmazonReviews || $showStandardReviews}
+					<div id='reviewPlaceholder'></div>
+					{/if}
+				</div>
 			{/foreach}
 			
 			{if $showComments == 1}
